@@ -2,9 +2,17 @@ import json
 import requests
 import os
 from groq import Groq
+from dotenv import load_dotenv
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
+load_dotenv()  # charge ton fichier .env automatiquement
+
+api_key = os.getenv("GROQ_API_KEY")
+
+print(api_key)  # juste pour vérifier
+
+
+client = Groq(api_key=api_key)
 DEVICE = "pc_fixe"
 
 
