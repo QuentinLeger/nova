@@ -16,8 +16,11 @@ Aider a coder (idée de code, de projet, Claude ?)
 
 
 A savoir : 
+
 Pour relance jarvis depuis Ubuntu server
 
 cd ~/ProjetJarvis
+
 source venv/bin/activate
+
 python server.py
