@@ -1,8 +1,9 @@
-from groq import Groq
 import json
 import requests
+import os
+from groq import Groq
 
-client = Groq(api_key="")
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 DEVICE = "pc_fixe"
 

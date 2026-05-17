@@ -4,9 +4,10 @@ import webbrowser
 import json
 import datetime
 
+
 app = Flask(__name__)
 
-with open("config_pc_fixe.json") as f:
+with open("portable.json") as f:
     CONFIG = json.load(f)
 
 @app.post("/execute")
