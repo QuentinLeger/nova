@@ -32,6 +32,18 @@ tu renvoies un champ "device". Sinon device = "pc_fixe".
 Exemple :
 {{"action": "ouvrir_app", "device": "portable", "params": {{"app": "steam"}}}}
 
+Pour des sites :
+Si l'utilisateur demande d'ouvrir un site (ex : "ouvre youtube", "va sur google", "mets twitch"),
+tu dois renvoyer :
+
+{"action": "ouvrir_site", "device": "pc_fixe", "params": {"url": "https://adresse_du_site"}}
+
+Toujours mettre une URL complète avec https://
+Exemples :
+- "ouvre youtube" → {"action": "ouvrir_site", "params": {"url": "https://youtube.com"}}
+- "va sur google" → {"action": "ouvrir_site", "params": {"url": "https://google.com"}}
+- "mets twitch" → {"action": "ouvrir_site", "params": {"url": "https://twitch.tv"}}
+
 Phrase : "{message}"
 """
     response = client.chat.completions.create(
