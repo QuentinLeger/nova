@@ -12,3 +12,15 @@ Répondre a des requetes simples (répondre comme une IA)
 Ouvrir des app (a voir) ou plusieurs en meme temps : preset
 
 Aider a coder (idée de code, de projet, Claude ?)
+
+
+
+A savoir : 
+
+Pour relance jarvis depuis Ubuntu server
+
+cd ~/ProjetJarvis
+
+source venv/bin/activate
+
+python server.py
