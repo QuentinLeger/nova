@@ -18,34 +18,34 @@ DEVICE = "pc_fixe"
 
 def ask_jarvis(message: str):
     prompt = f"""
-Tu es Jarvis. Réponds UNIQUEMENT en JSON valide.
+    Tu es Jarvis. Réponds UNIQUEMENT en JSON valide.
 
-Actions possibles :
-- ouvrir_site
-- dire_heure
-- repondre
-- ouvrir_app
+    Actions possibles :
+    - ouvrir_site
+    - dire_heure
+    - repondre
+    - ouvrir_app
 
-Si l'utilisateur mentionne un appareil (pc fixe, portable, tv, lumiere, etc.),
-tu renvoies un champ "device". Sinon device = "pc_fixe".
+    Si l'utilisateur mentionne un appareil (pc fixe, portable, tv, lumiere, etc.),
+    tu renvoies un champ "device". Sinon device = "pc_fixe".
 
-Exemple :
-{{"action": "ouvrir_app", "device": "portable", "params": {{"app": "steam"}}}}
+    Exemple :
+    {{"action": "ouvrir_app", "device": "portable", "params": {{"app": "steam"}}}}
 
-Pour des sites :
-Si l'utilisateur demande d'ouvrir un site (ex : "ouvre youtube", "va sur google", "mets twitch"),
-tu dois renvoyer :
+    Pour des sites :
+    Si l'utilisateur demande d'ouvrir un site (ex : "ouvre youtube", "va sur google", "mets twitch"),
+    tu dois renvoyer :
 
-{"action": "ouvrir_site", "device": "pc_fixe", "params": {"url": "https://adresse_du_site"}}
+    {{"action": "ouvrir_site", "device": "pc_fixe", "params": {{"url": "https://adresse_du_site"}}}}
 
-Toujours mettre une URL complète avec https://
-Exemples :
-- "ouvre youtube" → {"action": "ouvrir_site", "params": {"url": "https://youtube.com"}}
-- "va sur google" → {"action": "ouvrir_site", "params": {"url": "https://google.com"}}
-- "mets twitch" → {"action": "ouvrir_site", "params": {"url": "https://twitch.tv"}}
+    Toujours mettre une URL complète avec https://
+    Exemples :
+    - "ouvre youtube" → {{"action": "ouvrir_site", "params": {{"url": "https://youtube.com"}}}}
+    - "va sur google" → {{"action": "ouvrir_site", "params": {{"url": "https://google.com"}}}}
+    - "mets twitch" → {{"action": "ouvrir_site", "params": {{"url": "https://twitch.tv"}}}}
 
-Phrase : "{message}"
-"""
+    Phrase : "{message}"
+    """
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[{"role": "user", "content": prompt}]
