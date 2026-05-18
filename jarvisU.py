@@ -6,12 +6,14 @@ from groq import Groq
 from dotenv import load_dotenv
 import speech_recognition as sr
 import pyttsx3
+import subprocess
+
+
 
 engine = pyttsx3.init()
 
 def parler(texte):
-    engine.say(texte)
-    engine.runAndWait()
+    subprocess.call(["espeak-ng", "-v", "fr", texte])
 
 def ecouter():
     r = sr.Recognizer()
@@ -41,7 +43,7 @@ def ask_jarvis(message: str):
     Tu es Jarvis. Réponds UNIQUEMENT en JSON valide.
 
     Tu es mon assitant vocal :D ton but est de maider au quotidien, dans mes taches, dans mes automatisations etc
-    Tu dois me parler comme une personne normale soit pro quand il est temps, soit détendu dans le respect quand meme je suis ton créateur :)
+    Tu dois me parler comme une personne normale soit pro quand il est temps mais dans la limite du respect et du boulot
     Donc un peu la meme relation entre jarvis et Iron man
     
     Actions possibles :
