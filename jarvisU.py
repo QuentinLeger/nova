@@ -16,13 +16,18 @@ def parler(texte):
 def ecouter():
     r = sr.Recognizer()
     with sr.Microphone() as source:
+        r.adjust_for_ambient_noise(source, duration=1)  # calibre le bruit ambiant
         print("J'écoute...")
-        audio = r.listen(source)
+        try:
+            audio = r.listen(source, timeout=5, phrase_time_limit=10)  # arrête après 5s de silence
+        except sr.WaitTimeoutError:
+            print("Rien entendu")
+            return None
     try:
         texte = r.recognize_google(audio, language="fr-FR")
         print(f"{texte}")
         return texte
-    except :
+    except:
         print("Pas compris")
         return None
 
