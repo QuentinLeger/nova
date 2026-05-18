@@ -3,6 +3,30 @@ import requests
 import os
 from groq import Groq
 from dotenv import load_dotenv
+import speech_recognition as sr
+import pyttsx3
+
+
+engine = pyttsx3.init()
+
+def parler(texte):
+    engine.say(texte)
+    engine.runAndWait()
+
+def ecouter():
+    r = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("J'écoute...")
+        audio = r.listen(source)
+    try:
+        texte = r.recognize_google(audio, language="fr-FR")
+        print(f"{texte}")
+        return texte
+    except :
+        print("Pas compris")
+        return None
+
+
 
 
 load_dotenv()  # charge ton fichier .env automatiquement
@@ -68,10 +92,14 @@ def send_to_device(device, payload):
 # PROGRAMME PRINCIPAL
 # -----------------------------
 
-message = input("Requete : ")
-result = ask_jarvis(message)
-print(result)
+message = ecouter()
+if message:
+    result = ask_jarvis(message)
+    print(result)
+    device = result.get("device", DEVICE)
+    send_to_device(device, result)
+    parler(result)
+
+
 print()
 
-device = result.get("device", DEVICE)
-send_to_device(device, result)
