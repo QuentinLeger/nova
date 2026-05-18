@@ -103,8 +103,12 @@ if message:
     print(result)
     device = result.get("device", DEVICE)
     send_to_device(device, result)
-    parler(result)
-
+    if result["action"] == "ouvrir_site":
+        parler(f"J'ouvre {result['params']['url']}")
+    elif result["action"] == "dire_heure":
+        parler("Il est je sais pas quelle heure")
+    elif result["action"] == "repondre":
+        parler(result["params"]["reponse"])
 
 print()
 
