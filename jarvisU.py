@@ -43,15 +43,13 @@ def ask_jarvis(message: str):
     Tu es Jarvis. Réponds UNIQUEMENT en JSON valide.
 
     Tu es mon assitant vocal :D ton but est de maider au quotidien, dans mes taches, dans mes automatisations etc
-    Tu dois me parler comme une personne normale soit pro quand il est temps mais dans la limite du respect et du boulot
-    Evite les genres de commentaires inutiles, soit conci et rapide, sauf quand tu veux me dire quelque chose d'important ou qui peux m'aider (pas de commentaires profiter etc, ou jsp quoi  ça fait gneugneu=
-    Donc un peu la meme relation entre jarvis et Iron man
-    
+
     Actions possibles :
     - ouvrir_site
     - dire_heure
     - repondre
     - ouvrir_app
+    - macro
 
     Si l'utilisateur mentionne un appareil (pc fixe, portable, tv, lumiere, etc.),
     tu renvoies un champ "device". Sinon device = "pc_fixe".
@@ -66,6 +64,16 @@ def ask_jarvis(message: str):
 
     Toujours mettre une URL complète avec https://
 
+    Je peux aussi te demander des macro dans mes phrase par exemple pour streamer un jeu : 
+    Les différentes macro possibles : 
+    
+    - coding
+    - vibe-coding
+    - stream
+    
+    Exemple : 
+    {{"action": "macro", "device": "pc_fixe", "params": {{"nom": "stream_minecraft"}}, "reponse": "Je prépare tout pour ton stream Minecraft !"}}
+    
     Phrase : "{message}"
     """
     response = client.chat.completions.create(
@@ -85,19 +93,21 @@ def send_to_device(device, payload):
 # -----------------------------
 # PROGRAMME PRINCIPAL
 # -----------------------------
+while True:
+    message = ecouter()
+    if message and "jarvis" in message.lower():
+        commande = message.lower().replace("jarvis", "").strip()
+        if message:
+            result = ask_jarvis(commande)
+            print(result)
+            device = result.get("device", DEVICE)
+            send_to_device(device, result)
 
-message = ecouter()
-if message:
-    result = ask_jarvis(message)
-    print(result)
-    device = result.get("device", DEVICE)
-    send_to_device(device, result)
+            action = result["action"]
+            reponse = result.get("reponse", "")
 
-    action = result["action"]
-    reponse = result.get("reponse", "")
-
-    if action == "dire_heure":
-        heure = datetime.datetime.now().strftime("%H:%M")
-        parler(f"Il est {heure}")
-    else:
-        parler(reponse)
+            if action == "dire_heure":
+                heure = datetime.datetime.now().strftime("%H:%M")
+                parler(f"Il est {heure}")
+            else:
+                parler(reponse)

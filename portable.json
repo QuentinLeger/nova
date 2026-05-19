@@ -7,5 +7,15 @@
     "deezer": "C:\\\\Program Files\\\\WindowsApps\\\\Deezer.62021768415AF_7.1.190.0_x86__q7m17pa7q8kj0\\\\app\\\\Deezer.exe",
     "pycharm": "C:\\\\Program Files\\\\JetBrains\\\\PyCharm 2026.1.1\\\\bin\\\\pycharm64.exe",
     "intelliJ": "C:\\\\Program Files\\\\JetBrains\\\\IntelliJ IDEA 2025.3.4\\\\bin\\\\idea64.exe"
-  }
+  },
+  "macros": {
+        "coding": [
+            {"action": "ouvrir_app", "params": {"app": "intelliJ"}},
+            {"action": "ouvrir_app", "params": {"app": "claude"}}
+        ],
+        "vibe-coding": [
+            {"action": "ouvrir_app", "params": {"app": "deezer"}},
+            {"action": "ouvrir_app", "params":  {"app": "pycharm"}}
+        ]
+    }
 }
