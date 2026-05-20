@@ -44,7 +44,7 @@ def ecouter():
 load_dotenv()
 
 api_key = os.getenv("GROQ_API_KEY")
-client = Groq(api_key="")
+client = Groq(api_key=api_key)
 DEVICE = "pc_portable"
 
 def ask_jarvis(message: str):
