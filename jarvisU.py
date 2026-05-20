@@ -97,7 +97,7 @@ def send_to_device(device, payload):
         "pc_fixe": "192.168.1.18:5001",
         "pc_portable": f"{get_my_ip()}:5001"
     }
-    if device == None:
+    if device not in DEVICE_IPS:
         device = DEVICE
     url = f"http://{DEVICE_IPS[device]}/execute"
     requests.post(url, json=payload)
