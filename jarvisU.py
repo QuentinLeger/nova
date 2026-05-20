@@ -45,7 +45,7 @@ load_dotenv()
 
 api_key = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=api_key)
-DEVICE = "pc_portable"
+DEVICE = "pc_fixe"
 
 def ask_jarvis(message: str):
     prompt = f"""
