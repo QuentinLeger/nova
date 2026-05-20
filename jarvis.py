@@ -6,7 +6,7 @@ import datetime
 
 app = Flask(__name__)
 
-with open("config.json") as f:
+with open("portable.json") as f:
     CONFIG = json.load(f)
 
 def executer_action(data):

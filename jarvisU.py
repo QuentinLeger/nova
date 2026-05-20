@@ -7,6 +7,14 @@ from dotenv import load_dotenv
 import speech_recognition as sr
 import pyttsx3
 import subprocess
+import socket
+
+def get_my_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    ip = s.getsockname()[0]
+    s.close()
+    return ip
 
 
 
@@ -34,16 +42,16 @@ def ecouter():
         return None
 
 load_dotenv()
+
 api_key = os.getenv("GROQ_API_KEY")
-client = Groq(api_key=api_key)
-DEVICE = "pc_fixe"
+client = Groq(api_key="")
+DEVICE = "pc_portable"
 
 def ask_jarvis(message: str):
     prompt = f"""
     Tu es Jarvis. Réponds UNIQUEMENT en JSON valide.
 
     Tu es mon assitant vocal :D ton but est de maider au quotidien, dans mes taches, dans mes automatisations etc
-
     Actions possibles :
     - ouvrir_site
     - dire_heure
@@ -52,7 +60,8 @@ def ask_jarvis(message: str):
     - macro
 
     Si l'utilisateur mentionne un appareil (pc fixe, portable, tv, lumiere, etc.),
-    tu renvoies un champ "device". Sinon device = "pc_fixe".
+    tu renvoies un champ "device". Sinon ne fait rien
+    Possibilité : pc_fixe, pc_portable
 
     Tu dois toujours inclure un champ "reponse" avec une réponse personnalisée et naturelle. Tu peux les faire plus longue et plus naturelle
 
@@ -85,29 +94,46 @@ def ask_jarvis(message: str):
 
 def send_to_device(device, payload):
     DEVICE_IPS = {
-        "pc_fixe": "192.168.1.18:5001"
+        "pc_fixe": "192.168.1.18:5001",
+        "pc_portable": f"{get_my_ip()}:5001"
     }
+    if device == None:
+        device = DEVICE
     url = f"http://{DEVICE_IPS[device]}/execute"
     requests.post(url, json=payload)
 
 # -----------------------------
 # PROGRAMME PRINCIPAL
 # -----------------------------
-while True:
-    message = ecouter()
-    if message and "jarvis" in message.lower():
-        commande = message.lower().replace("jarvis", "").strip()
-        if message:
-            result = ask_jarvis(commande)
-            print(result)
-            device = result.get("device", DEVICE)
-            send_to_device(device, result)
 
-            action = result["action"]
-            reponse = result.get("reponse", "")
+mode = input("Quel mode souhaitez vous activer (écrit ou oral) : ")
+if mode == "ecrit":
+    message = input("Votre requete : ")
+    if message:
+        result = ask_jarvis(message)
+        print(result)
+        device = result.get("device", DEVICE)
+        send_to_device(device, result)
 
-            if action == "dire_heure":
-                heure = datetime.datetime.now().strftime("%H:%M")
-                parler(f"Il est {heure}")
-            else:
-                parler(reponse)
+        action = result["action"]
+        reponse = result.get("reponse", "")
+        print(reponse)
+else :
+    while True:
+        message = ecouter()
+        if message and "jarvis" in message.lower():
+            commande = message.lower().replace("jarvis", "").strip()
+            if message:
+                result = ask_jarvis(commande)
+                print(result)
+                device = result.get("device", DEVICE)
+                send_to_device(device, result)
+
+                action = result["action"]
+                reponse = result.get("reponse", "")
+
+                if action == "dire_heure":
+                    heure = datetime.datetime.now().strftime("%H:%M")
+                    parler(f"Il est {heure}")
+                else:
+                    parler(reponse)
