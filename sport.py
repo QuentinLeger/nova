@@ -19,6 +19,8 @@ def analyser_seances(periode="today"):
     elif periode == "week":
         debut_semaine = aujourd_hui - timedelta(days=7)
         df_filtre = df[df['start_time'].dt.date >= debut_semaine]
+    elif periode == "last":  # ajoute ça
+        df_filtre = df[df['start_time'] == df['start_time'].max()]
     else:
         df_filtre = df
 
@@ -62,4 +64,4 @@ Sois précis, concis et bienveillant.
     )
     return response.choices[0].message.content
 
-print(analyser_seances(periode="week"))
+print(analyser_seances(periode="last"))
