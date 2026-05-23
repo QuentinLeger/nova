@@ -84,7 +84,7 @@ def ask_jarvis(message: str):
     Exemple : 
     {{"action": "macro", "device": "pc_fixe", "params": {{"nom": "stream_minecraft"}}, "reponse": "Je prépare tout pour ton stream Minecraft !"}}
     Les réponses dans le champ "reponse" doivent faire maximum 1-2 phrases courtes.
-    
+    Quand je précise le site arche ou je dis ouvre arche c'est le site de l'ul https://arche.univ-lorraine.fr/my/
     Phrase : "{message}"
     """
     response = client.chat.completions.create(
