@@ -231,10 +231,40 @@ if mode == "ecrit":
 
         if action == "analyse_seance":
             periode = result.get("params", {}).get("periode", "last")
-            parler("J'analyse ta séance, le programme arrive sur ton bureau !")
+            parler("J'analyse ta séance, ça arrive !")
+
+            # Analyse complète
             analyse = analyser_seances(periode=periode)
             print(analyse)
+
+            # Envoie le récap écrit sur le PC fixe
+            try:
+                requests.post("http://192.168.1.18:5001/save_file", json={
+                    "nom": "recap_seance.txt",
+                    "contenu": analyse
+                }, timeout=5)
+            except:
+                pass
+
+            # Génère la prochaine séance
             generer_prochaine_seance(analyse)
+
+            # Résumé oral court
+            response = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{
+                    "role": "user",
+                    "content": f"""
+        Sur la base de cette analyse :
+        {analyse}
+
+        Fais un résumé TRÈS court en 2-3 phrases max pour être lu à voix haute.
+        Mentionne juste les points clés et la principale recommandation.
+                    """
+                }]
+            )
+            resume_oral = response.choices[0].message.content
+            parler(resume_oral)
         elif action == "dire_heure":
             heure = datetime.now().strftime("%H:%M")
             parler(f"Il est {heure}")
@@ -256,10 +286,40 @@ else:
 
                 if action == "analyse_seance":
                     periode = result.get("params", {}).get("periode", "last")
-                    parler("J'analyse ta séance, le programme arrive sur ton bureau !")
+                    parler("J'analyse ta séance, ça arrive !")
+
+                    # Analyse complète
                     analyse = analyser_seances(periode=periode)
                     print(analyse)
+
+                    # Envoie le récap écrit sur le PC fixe
+                    try:
+                        requests.post("http://192.168.1.18:5001/save_file", json={
+                            "nom": "recap_seance.txt",
+                            "contenu": analyse
+                        }, timeout=5)
+                    except:
+                        pass
+
+                    # Génère la prochaine séance
                     generer_prochaine_seance(analyse)
+
+                    # Résumé oral court
+                    response = client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
+                        messages=[{
+                            "role": "user",
+                            "content": f"""
+                Sur la base de cette analyse :
+                {analyse}
+
+                Fais un résumé TRÈS court en 2-3 phrases max pour être lu à voix haute.
+                Mentionne juste les points clés et la principale recommandation.
+                            """
+                        }]
+                    )
+                    resume_oral = response.choices[0].message.content
+                    parler(resume_oral)
                 elif action == "dire_heure":
                     heure = datetime.now().strftime("%H:%M")
                     parler(f"Il est {heure}")
