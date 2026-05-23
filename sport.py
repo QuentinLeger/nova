@@ -57,4 +57,4 @@ def analyser_seances(periode="today"):
     )
     return response.choices[0].message.content
 
-analyser_seances(periode="today")
+print(analyser_seances(periode="today"))
