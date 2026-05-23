@@ -64,4 +64,42 @@ Sois précis, concis et bienveillant.
     )
     return response.choices[0].message.content
 
-print(analyser_seances(periode="last"))
+
+def generer_prochaine_seance(analyse: str):
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{
+            "role": "user",
+            "content": f"""
+Sur la base de cette analyse :
+{analyse}
+
+Génère un programme pour ma prochaine séance en JSON valide :
+{{
+    "date_recommandee": "dans X jours",
+    "exercices": [
+        {{
+            "nom": "Bench Press",
+            "series": 4,
+            "reps": 10,
+            "charge_kg": 80,
+            "note": "augmente de 2.5kg si tu complètes toutes les séries"
+        }}
+    ],
+    "conseil_global": "..."
+}}
+            """
+        }]
+    )
+
+    programme = response.choices[0].message.content
+
+    with open("prochaine_seance.json", "w") as f:
+        f.write(programme)
+
+    print("Programme sauvegardé dans prochaine_seance.json")
+    return programme
+
+analyse = analyser_seances(periode="last")
+print(analyse)
+generer_prochaine_seance(analyse)
