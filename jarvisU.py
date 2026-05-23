@@ -115,7 +115,11 @@ if mode == "ecrit":
         result = ask_jarvis(message)
         print(result)
         device = result.get("device", DEVICE)
-        send_to_device(device, result)
+
+        try:
+            send_to_device(device, result)
+        except:
+            pass  # pas grave si l'appareil répond pas
 
         action = result["action"]
         reponse = result.get("reponse", "")
@@ -124,7 +128,7 @@ if mode == "ecrit":
             heure = datetime.datetime.now().strftime("%H:%M")
             parler(f"Il est {heure}")
         else:
-            parler(reponse)
+            parler(reponse)  # toujours appelé peu importe l'action
 else :
     while True:
         message = ecouter()
