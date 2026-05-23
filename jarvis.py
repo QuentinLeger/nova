@@ -2,35 +2,43 @@ from flask import Flask, request
 import subprocess
 import webbrowser
 import json
-import datetime
 import requests
 import asyncio
 import edge_tts
 import pygame
-import webbrowser
+import os
+from datetime import datetime
+from dotenv import load_dotenv
 
+load_dotenv()
 app = Flask(__name__)
 
 with open("portable.json") as f:
     CONFIG = json.load(f)
 
-
 async def generer_voix(texte):
     communicate = edge_tts.Communicate(texte, voice="fr-FR-DeniseNeural", rate="-10%", pitch="-5Hz")
     await communicate.save("output.mp3")
-
 
 @app.post("/speak")
 def speak():
     texte = request.json["text"]
     asyncio.run(generer_voix(texte))
-
     pygame.mixer.init()
     pygame.mixer.music.load("output.mp3")
     pygame.mixer.music.play()
     while pygame.mixer.music.get_busy():
         pygame.time.Clock().tick(10)
+    return {"status": "ok"}
 
+@app.post("/save_file")
+def save_file():
+    nom = request.json["nom"]
+    contenu = request.json["contenu"]
+    chemin = f"C:/Users/qlege/Desktop/{nom}"
+    with open(chemin, "w", encoding="utf-8") as f:
+        f.write(contenu)
+    print(f"Fichier sauvegardé : {chemin}")
     return {"status": "ok"}
 
 def executer_action(data):
@@ -41,7 +49,7 @@ def executer_action(data):
         chrome.open(data["params"]["url"])
 
     elif action == "dire_heure":
-        heure = datetime.datetime.now().strftime("%H:%M")
+        heure = datetime.now().strftime("%H:%M")
         print(f"Il est {heure}")
 
     elif action == "repondre":
@@ -64,11 +72,9 @@ def executer_action(data):
         else:
             print(f"Macro inconnue : {nom}")
 
-
 @app.post("/execute")
 def execute():
     executer_action(request.json)
-    
     return {"status": "ok"}
 
 app.run(host="0.0.0.0", port=5001)

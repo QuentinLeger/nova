@@ -1,15 +1,16 @@
 import json
 import requests
 import os
-import datetime
-from groq import Groq
-from dotenv import load_dotenv
+import socket
+import subprocess
 import speech_recognition as sr
 import pyttsx3
-import subprocess
-import socket
-import requests
+import pandas as pd
+from datetime import datetime, timedelta
+from groq import Groq
+from dotenv import load_dotenv
 
+load_dotenv()
 
 def get_my_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -21,8 +22,10 @@ def get_my_ip():
 engine = pyttsx3.init()
 
 def parler(texte):
-    # envoie au PC fixe pour qu'il parle via Voicebox
-    requests.post("http://192.168.1.18:5001/speak", json={"text": texte})
+    try:
+        requests.post("http://192.168.1.18:5001/speak", json={"text": texte}, timeout=10)
+    except:
+        print(f"Jarvis : {texte}")
 
 def ecouter():
     r = sr.Recognizer()
@@ -36,13 +39,11 @@ def ecouter():
             return None
     try:
         texte = r.recognize_google(audio, language="fr-FR")
-        print(f"{texte}")
+        print(f"Vous : {texte}")
         return texte
     except:
         print("Pas compris")
         return None
-
-load_dotenv()
 
 api_key = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=api_key)
@@ -52,39 +53,36 @@ def ask_jarvis(message: str):
     prompt = f"""
     Tu es Jarvis. Réponds UNIQUEMENT en JSON valide.
 
-    Tu es mon assitant vocal :D ton but est de maider au quotidien, dans mes taches, dans mes automatisations etc
+    Tu es mon assistant vocal. Ton but est de m'aider au quotidien, dans mes tâches et automatisations.
+
     Actions possibles :
     - ouvrir_site
     - dire_heure
     - repondre
     - ouvrir_app
     - macro
+    - analyse_seance
 
-    Si l'utilisateur mentionne un appareil (pc fixe, portable, tv, lumiere, etc.),
-    tu renvoies un champ "device". Sinon ne fait rien
+    Pour analyse_seance : si je dis "ma séance" = today, "dernière séance" = last, "cette semaine" = week
+
+    Si l'utilisateur mentionne un appareil (pc fixe, portable), tu renvoies un champ "device".
+    Sinon device = "pc_fixe"
     Possibilité : pc_fixe, pc_portable
 
-    Tu dois toujours inclure un champ "reponse" avec une réponse personnalisée et naturelle. Tu peux les faire plus longue et plus naturelle
+    Tu dois toujours inclure un champ "reponse" avec une réponse courte (1-2 phrases max).
 
     Exemples :
-    {{"action": "ouvrir_app", "device": "portable", "params": {{"app": "steam"}}, "reponse": "J'ouvre Steam dès maintenant, bonne session de jeu !"}}
+    {{"action": "ouvrir_app", "device": "pc_fixe", "params": {{"app": "steam"}}, "reponse": "J'ouvre Steam dès maintenant !"}}
     {{"action": "ouvrir_site", "device": "pc_fixe", "params": {{"url": "https://youtube.com"}}, "reponse": "J'ouvre YouTube pour vous."}}
-    {{"action": "dire_heure", "device": "pc_fixe", "params": {{}}, "reponse": "Je vérifie l'heure pour vous."}}
-    {{"action": "repondre", "device": "pc_fixe", "params": {{}}, "reponse": "Voici ma réponse à votre question."}}
-
-    Toujours mettre une URL complète avec https://
-
-    Je peux aussi te demander des macro dans mes phrase par exemple pour streamer un jeu : 
-    Les différentes macro possibles : 
-    
-    - coding
-    - vibe-coding
-    - stream
-    
-    Exemple : 
+    {{"action": "dire_heure", "device": "pc_fixe", "params": {{}}, "reponse": "Je vérifie l'heure."}}
+    {{"action": "repondre", "device": "pc_fixe", "params": {{}}, "reponse": "Voici ma réponse."}}
+    {{"action": "analyse_seance", "device": "pc_fixe", "params": {{"periode": "last"}}, "reponse": "J'analyse ta dernière séance !"}}
     {{"action": "macro", "device": "pc_fixe", "params": {{"nom": "stream_minecraft"}}, "reponse": "Je prépare tout pour ton stream Minecraft !"}}
-    Les réponses dans le champ "reponse" doivent faire maximum 1-2 phrases courtes.
-    Quand je précise le site arche ou je dis ouvre arche c'est le site de l'ul https://arche.univ-lorraine.fr/my/
+
+    Macros disponibles : coding, vibe-coding, stream
+    Toujours mettre une URL complète avec https://
+    Quand je dis "arche" c'est https://arche.univ-lorraine.fr/my/
+
     Phrase : "{message}"
     """
     response = client.chat.completions.create(
@@ -92,7 +90,20 @@ def ask_jarvis(message: str):
         messages=[{"role": "user", "content": prompt}]
     )
     text = response.choices[0].message.content
-    return json.loads(text)
+    try:
+        text = text.strip()
+        if text.startswith("```"):
+            text = text.split("```")[1]
+            if text.startswith("json"):
+                text = text[4:]
+        return json.loads(text)
+    except json.JSONDecodeError:
+        return {
+            "action": "repondre",
+            "device": "pc_fixe",
+            "params": {},
+            "reponse": "Désolé, je n'ai pas compris."
+        }
 
 def send_to_device(device, payload):
     DEVICE_IPS = {
@@ -101,50 +112,157 @@ def send_to_device(device, payload):
     }
     if device not in DEVICE_IPS:
         device = DEVICE
-    url = f"http://{DEVICE_IPS[device]}/execute"
-    requests.post(url, json=payload)
+    try:
+        url = f"http://{DEVICE_IPS[device]}/execute"
+        requests.post(url, json=payload, timeout=5)
+    except Exception as e:
+        print(f"Appareil injoignable : {e}")
+
+def analyser_seances(periode="last"):
+    df = pd.read_csv("workouts.csv")
+    df['start_time'] = pd.to_datetime(df['start_time'], format="%b %d, %Y, %I:%M %p")
+
+    aujourd_hui = datetime.now().date()
+
+    if periode == "today":
+        df_filtre = df[df['start_time'].dt.date == aujourd_hui]
+    elif periode == "week":
+        debut_semaine = aujourd_hui - timedelta(days=7)
+        df_filtre = df[df['start_time'].dt.date >= debut_semaine]
+    elif periode == "last":
+        df_filtre = df[df['start_time'] == df['start_time'].max()]
+    else:
+        df_filtre = df
+
+    resume_historique = ""
+    for (date, exercice), groupe in df.groupby(['start_time', 'exercise_title']):
+        series = ", ".join([f"{r['weight_kg']}kg x{int(r['reps'])}" for _, r in groupe.iterrows()])
+        resume_historique += f"{date} - {exercice}: {series}\n"
+
+    resume_jour = ""
+    for exercice, groupe in df_filtre.groupby('exercise_title'):
+        series = ", ".join([f"{r['weight_kg']}kg x{int(r['reps'])}" for _, r in groupe.iterrows()])
+        resume_jour += f"{exercice}: {series}\n"
+
+    if not resume_jour:
+        return "Aucune séance trouvée pour cette période."
+
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{
+            "role": "user",
+            "content": f"""
+Tu es un coach sportif expert en musculation.
+
+Historique complet :
+{resume_historique}
+
+Séance analysée :
+{resume_jour}
+
+Analyse cette séance et dis moi :
+- Ma progression sur chaque exercice
+- Les charges et reps recommandées pour la prochaine fois
+- Les points à améliorer
+- Un conseil général
+
+Sois précis, concis et bienveillant.
+            """
+        }]
+    )
+    return response.choices[0].message.content
+
+def generer_prochaine_seance(analyse: str):
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{
+            "role": "user",
+            "content": f"""
+Sur la base de cette analyse :
+{analyse}
+
+Génère un programme pour ma prochaine séance en JSON valide uniquement, sans texte autour :
+{{
+    "date_recommandee": "dans X jours",
+    "exercices": [
+        {{
+            "nom": "Bench Press",
+            "series": 4,
+            "reps": 10,
+            "charge_kg": 80,
+            "note": "augmente de 2.5kg si tu complètes toutes les séries"
+        }}
+    ],
+    "conseil_global": "..."
+}}
+            """
+        }]
+    )
+
+    programme = response.choices[0].message.content
+
+    try:
+        requests.post("http://192.168.1.18:5001/save_file", json={
+            "nom": "prochaine_seance.json",
+            "contenu": programme
+        }, timeout=5)
+        print("Programme envoyé sur le PC fixe !")
+    except:
+        print("PC fixe injoignable, sauvegarde locale")
+        with open("prochaine_seance.json", "w") as f:
+            f.write(programme)
+
+    return programme
 
 # -----------------------------
 # PROGRAMME PRINCIPAL
 # -----------------------------
 
-mode = input("Quel mode souhaitez vous activer (écrit ou oral) : ")
+mode = input("Mode (ecrit/oral) : ")
+
 if mode == "ecrit":
-    message = input("Votre requete : ")
+    message = input("Votre requête : ")
     if message:
         result = ask_jarvis(message)
         print(result)
         device = result.get("device", DEVICE)
-
-        try:
-            send_to_device(device, result)
-        except:
-            pass  # pas grave si l'appareil répond pas
-
         action = result["action"]
         reponse = result.get("reponse", "")
 
-        if action == "dire_heure":
-            heure = datetime.datetime.now().strftime("%H:%M")
+        if action == "analyse_seance":
+            periode = result.get("params", {}).get("periode", "last")
+            parler("J'analyse ta séance, le programme arrive sur ton bureau !")
+            analyse = analyser_seances(periode=periode)
+            print(analyse)
+            generer_prochaine_seance(analyse)
+        elif action == "dire_heure":
+            heure = datetime.now().strftime("%H:%M")
             parler(f"Il est {heure}")
         else:
-            parler(reponse)  # toujours appelé peu importe l'action
-else :
+            send_to_device(device, result)
+            parler(reponse)
+
+else:
     while True:
         message = ecouter()
         if message and "jarvis" in message.lower():
             commande = message.lower().replace("jarvis", "").strip()
-            if message:
+            if commande:
                 result = ask_jarvis(commande)
                 print(result)
                 device = result.get("device", DEVICE)
-                send_to_device(device, result)
-
                 action = result["action"]
                 reponse = result.get("reponse", "")
 
-                if action == "dire_heure":
-                    heure = datetime.datetime.now().strftime("%H:%M")
+                if action == "analyse_seance":
+                    periode = result.get("params", {}).get("periode", "last")
+                    parler("J'analyse ta séance, le programme arrive sur ton bureau !")
+                    analyse = analyser_seances(periode=periode)
+                    print(analyse)
+                    generer_prochaine_seance(analyse)
+                elif action == "dire_heure":
+                    heure = datetime.now().strftime("%H:%M")
                     parler(f"Il est {heure}")
                 else:
+                    send_to_device(device, result)
                     parler(reponse)
