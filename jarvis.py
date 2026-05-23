@@ -3,11 +3,21 @@ import subprocess
 import webbrowser
 import json
 import datetime
+import requests
 
 app = Flask(__name__)
 
 with open("portable.json") as f:
     CONFIG = json.load(f)
+
+@app.post("/speak")
+def speak():
+    texte = request.json["text"]
+    requests.post("http://127.0.0.1:17493/speak", json={
+        "text": texte,
+        "profile": "Quentinvoice"
+    })
+    return {"status": "ok"}
 
 def executer_action(data):
     action = data["action"]

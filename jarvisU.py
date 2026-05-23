@@ -8,6 +8,7 @@ import speech_recognition as sr
 import pyttsx3
 import subprocess
 import socket
+import requests
 
 def get_my_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -16,12 +17,11 @@ def get_my_ip():
     s.close()
     return ip
 
-
-
 engine = pyttsx3.init()
 
 def parler(texte):
-    subprocess.call(["espeak-ng", "-v", "fr", texte])
+    # envoie au PC fixe pour qu'il parle via Voicebox
+    requests.post("http://192.168.1.18:5001/speak", json={"text": texte})
 
 def ecouter():
     r = sr.Recognizer()
