@@ -119,7 +119,12 @@ if mode == "ecrit":
 
         action = result["action"]
         reponse = result.get("reponse", "")
-        print(reponse)
+
+        if action == "dire_heure":
+            heure = datetime.datetime.now().strftime("%H:%M")
+            parler(f"Il est {heure}")
+        else:
+            parler(reponse)
 else :
     while True:
         message = ecouter()
