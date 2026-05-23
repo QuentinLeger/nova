@@ -20,22 +20,28 @@ async def generer_voix(texte):
     communicate = edge_tts.Communicate(texte, voice="fr-FR-DeniseNeural", rate="-10%", pitch="-5Hz")
     await communicate.save("output.mp3")
 
+
 @app.post("/speak")
 def speak():
     texte = request.json["text"]
-    asyncio.run(generer_voix(texte))
+
     pygame.mixer.init()
+    pygame.mixer.music.unload()  # libère le fichier
+
+    asyncio.run(generer_voix(texte))
+
     pygame.mixer.music.load("output.mp3")
     pygame.mixer.music.play()
     while pygame.mixer.music.get_busy():
         pygame.time.Clock().tick(10)
+
     return {"status": "ok"}
 
 @app.post("/save_file")
 def save_file():
     nom = request.json["nom"]
     contenu = request.json["contenu"]
-    chemin = f"C:/Users/atomi/Desktop/{nom}"
+    chemin = f"C:/Users/atomi/OneDrive/Bureau/{nom}"
     with open(chemin, "w", encoding="utf-8") as f:
         f.write(contenu)
     print(f"Fichier sauvegardé : {chemin}")
