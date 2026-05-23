@@ -4,19 +4,32 @@ import webbrowser
 import json
 import datetime
 import requests
+import asyncio
+import edge_tts
+import pygame
 
 app = Flask(__name__)
 
 with open("portable.json") as f:
     CONFIG = json.load(f)
 
+
+async def generer_voix(texte):
+    communicate = edge_tts.Communicate(texte, voice="fr-FR-DeniseNeural")
+    await communicate.save("output.mp3")
+
+
 @app.post("/speak")
 def speak():
     texte = request.json["text"]
-    requests.post("http://127.0.0.1:17493/speak", json={
-        "text": texte,
-        "profile": "Quentinvoice"
-    })
+    asyncio.run(generer_voix(texte))
+
+    pygame.mixer.init()
+    pygame.mixer.music.load("output.mp3")
+    pygame.mixer.music.play()
+    while pygame.mixer.music.get_busy():
+        pygame.time.Clock().tick(10)
+
     return {"status": "ok"}
 
 def executer_action(data):
