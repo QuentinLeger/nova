@@ -83,6 +83,7 @@ def ask_jarvis(message: str):
     
     Exemple : 
     {{"action": "macro", "device": "pc_fixe", "params": {{"nom": "stream_minecraft"}}, "reponse": "Je prépare tout pour ton stream Minecraft !"}}
+    Les réponses dans le champ "reponse" doivent faire maximum 1-2 phrases courtes.
     
     Phrase : "{message}"
     """

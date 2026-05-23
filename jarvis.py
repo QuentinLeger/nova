@@ -7,6 +7,7 @@ import requests
 import asyncio
 import edge_tts
 import pygame
+import webbrowser
 
 app = Flask(__name__)
 
@@ -15,7 +16,7 @@ with open("portable.json") as f:
 
 
 async def generer_voix(texte):
-    communicate = edge_tts.Communicate(texte, voice="fr-FR-DeniseNeural")
+    communicate = edge_tts.Communicate(texte, voice="fr-FR-DeniseNeural", rate="-10%", pitch="-5Hz")
     await communicate.save("output.mp3")
 
 
@@ -34,9 +35,10 @@ def speak():
 
 def executer_action(data):
     action = data["action"]
+    chrome = webbrowser.get("C:/Program Files/Google/Chrome/Application/chrome.exe %s")
 
     if action == "ouvrir_site":
-        webbrowser.open(data["params"]["url"])
+        chrome.open(data["params"]["url"])
 
     elif action == "dire_heure":
         heure = datetime.datetime.now().strftime("%H:%M")
