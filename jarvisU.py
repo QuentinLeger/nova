@@ -21,11 +21,19 @@ def get_my_ip():
 
 engine = pyttsx3.init()
 
-def parler(texte):
+def parler(texte, device):
+    IPS = {
+        "pc_fixe": "192.168.1.18:5001",
+        "pc_portable": "10.13.33.131:5001"
+    }
+    ip = IPS.get(device, "10.13.33.131:5001")
+    print(f"[PARLER] device={device}, ip={ip}, texte={texte}")  # debug
     try:
-        requests.post("http://192.168.1.18:5001/speak", json={"text": texte}, timeout=10)
-    except:
-        print(f"Jarvis : {texte}")
+        r = requests.post(f"http://{ip}/speak", json={"text": texte}, timeout=10)
+        print(f"[PARLER] status={r.status_code}")  # debug
+    except Exception as e:
+        print(f"[PARLER] ERREUR : {e}")
+        print(f"Nova : {texte}")
 
 def ecouter():
     r = sr.Recognizer()
@@ -47,11 +55,11 @@ def ecouter():
 
 api_key = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=api_key)
-DEVICE = "pc_fixe"
+DEVICE = "pc_portable"
 
-def ask_jarvis(message: str):
+def ask_nova(message: str):
     prompt = f"""
-    Tu es Jarvis. Réponds UNIQUEMENT en JSON valide.
+    Tu es Nova. Réponds UNIQUEMENT en JSON valide.
 
     Tu es mon assistant vocal. Ton but est de m'aider au quotidien, dans mes tâches et automatisations.
 
@@ -66,7 +74,7 @@ def ask_jarvis(message: str):
     Pour analyse_seance : si je dis "ma séance" = today, "dernière séance" = last, "cette semaine" = week
 
     Si l'utilisateur mentionne un appareil (pc fixe, portable), tu renvoies un champ "device".
-    Sinon device = "pc_fixe"
+    Sinon device = "pc_portable"
     Possibilité : pc_fixe, pc_portable
 
     Tu dois toujours inclure un champ "reponse" avec une réponse courte (1-2 phrases max).
@@ -82,6 +90,23 @@ def ask_jarvis(message: str):
     Macros disponibles : coding, vibe-coding, stream
     Toujours mettre une URL complète avec https://
     Quand je dis "arche" c'est https://arche.univ-lorraine.fr/my/
+    
+    N'utilise JAMAIS d'apostrophes dans le champ "reponse". Utilise "Je" au lieu de "J'" etc.
+    
+    Tu t'appelles Nova, tu es mon assistante personnelle.
+    Tu t'adresses à moi par mon prénom : Quentin.
+    Tu es professionnelle mais chaleureuse, avec une légère touche d'humour.
+    Tu utilises "vous" pour être élégante.
+    Exemples de réponses :
+    - "Bien sûr Quentin, je m'en occupe immédiatement."
+    - "Voilà qui est fait, Quentin. Autre chose ?"
+    - "Je lance ça pour vous, Quentin !"
+    Tes réponses doivent être naturelles et fluides à l'oral.
+    Utilise des virgules pour créer des pauses naturelles.
+    Exemple : "Bien sur, je vous lance Steam pour vous Quentin. " et réponse personalisé genre voulez vous jouer etc ? 
+    Plutôt que : "J'ouvre Steam dès maintenant."
+    Tu t'appelles Nova, tu es l'assistante de Quentin.
+    Tu es professionnelle, efficace, avec une légère touche d'humour.
 
     Phrase : "{message}"
     """
@@ -90,6 +115,8 @@ def ask_jarvis(message: str):
         messages=[{"role": "user", "content": prompt}]
     )
     text = response.choices[0].message.content
+    print(f"[GROQ RAW] {text}")  # debug
+
     try:
         text = text.strip()
         if text.startswith("```"):
@@ -108,7 +135,7 @@ def ask_jarvis(message: str):
 def send_to_device(device, payload):
     DEVICE_IPS = {
         "pc_fixe": "192.168.1.18:5001",
-        "pc_portable": f"{get_my_ip()}:5001"
+        "pc_portable": "10.13.33.131:5001"
     }
     if device not in DEVICE_IPS:
         device = DEVICE
@@ -223,7 +250,7 @@ mode = input("Mode (ecrit/oral) : ")
 if mode == "ecrit":
     message = input("Votre requête : ")
     if message:
-        result = ask_jarvis(message)
+        result = ask_nova(message)
         print(result)
         device = result.get("device", DEVICE)
         action = result["action"]
@@ -231,7 +258,7 @@ if mode == "ecrit":
 
         if action == "analyse_seance":
             periode = result.get("params", {}).get("periode", "last")
-            parler("J'analyse ta séance, ça arrive !")
+            parler("J'analyse ta séance, ça arrive !",device)
 
             # Analyse complète
             analyse = analyser_seances(periode=periode)
@@ -264,21 +291,22 @@ if mode == "ecrit":
                 }]
             )
             resume_oral = response.choices[0].message.content
-            parler(resume_oral)
+            parler(resume_oral,device)
         elif action == "dire_heure":
             heure = datetime.now().strftime("%H:%M")
-            parler(f"Il est {heure}")
+            parler(f"Il est {heure}",device)
         else:
             send_to_device(device, result)
-            parler(reponse)
+            parler(reponse,device)
+
 
 else:
     while True:
         message = ecouter()
-        if message and "jarvis" in message.lower():
-            commande = message.lower().replace("jarvis", "").strip()
+        if message and "nova" in message.lower():
+            commande = message.lower().replace("nova", "").strip()
             if commande:
-                result = ask_jarvis(commande)
+                result = ask_nova(commande)
                 print(result)
                 device = result.get("device", DEVICE)
                 action = result["action"]
@@ -286,7 +314,7 @@ else:
 
                 if action == "analyse_seance":
                     periode = result.get("params", {}).get("periode", "last")
-                    parler("J'analyse ta séance, ça arrive !")
+                    parler("J'analyse ta séance, ça arrive !",device)
 
                     # Analyse complète
                     analyse = analyser_seances(periode=periode)
@@ -319,10 +347,10 @@ else:
                         }]
                     )
                     resume_oral = response.choices[0].message.content
-                    parler(resume_oral)
+                    parler(resume_oral,device)
                 elif action == "dire_heure":
                     heure = datetime.now().strftime("%H:%M")
                     parler(f"Il est {heure}")
                 else:
                     send_to_device(device, result)
-                    parler(reponse)
+                    parler(reponse,device)
