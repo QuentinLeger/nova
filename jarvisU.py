@@ -75,7 +75,7 @@ def ask_nova(message: str):
     Pour analyse_seance : si je dis "ma séance" = today, "dernière séance" = last, "cette semaine" = week
 
     Si l'utilisateur mentionne un appareil (pc fixe, portable), tu renvoies un champ "device".
-    Sinon device = "pc_portable"
+    Sinon device = "pc_fixe"
     Possibilité : pc_fixe, pc_portable
 
     Tu dois toujours inclure un champ "reponse" avec une réponse courte (1-2 phrases max).
