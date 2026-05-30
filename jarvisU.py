@@ -96,13 +96,13 @@ def ask_nova(message: str):
     - Si l’utilisateur dit "cherche quelquechose sur Google", tu renvoies :
     {{"action": "recherche_web", "params": {{"type": "google", "query": "quelquechose"}}, "reponse": "......"}}
     
-    "ajoute une tâche" → {"action": "gestion_taches", "params": {"type": "add", "titre": "...", "date": "..."} }
+    "ajoute une tâche" → {{"action": "gestion_taches", "params": {{"type": "add", "titre": "...", "date": "..."}} }}
 
-    "liste mes tâches" → {"action": "gestion_taches", "params": {"type": "list"} }
+    "liste mes tâches" → {{"action": "gestion_taches", "params": {{"type": "list"}} }}
     
-    "supprime la tâche X" → {"action": "gestion_taches", "params": {"type": "delete", "id": "..."} }
+    "supprime la tâche X" → {{"action": "gestion_taches", "params": {{"type": "delete", "id": "..."}} }}
     
-    "qu’est-ce qu’il me reste à faire ?" → {"action": "gestion_taches", "params": {"type": "resume"} }
+    "qu’est-ce qu’il me reste à faire ?" → {{"action": "gestion_taches", "params": {{"type": "resume"}} }}
 
     Macros disponibles : coding, vibe-coding, stream
     Toujours mettre une URL complète avec https://
