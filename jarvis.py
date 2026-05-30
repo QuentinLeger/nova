@@ -9,6 +9,7 @@ import pygame
 import os
 from datetime import datetime
 from dotenv import load_dotenv
+from Notion import ajouter_tache, lister_taches, supprimer_tache
 
 load_dotenv()
 app = Flask(__name__)
@@ -96,9 +97,39 @@ def executer_action(data):
         chrome.open(url)
         print(f"Recherche lancée : {url}")
 
+
+    elif action == "gestion_taches":
+        params = data["params"]
+        type_action = params.get("type")
+
+        if type_action == "add":
+            titre = params.get("titre")
+            date = params.get("date")
+            ajouter_tache(titre, date)
+            print(f"Tâche ajoutée : {titre}")
+
+        elif type_action == "list":
+            taches = lister_taches()
+            print("Tâches :", taches)
+
+        elif type_action == "resume":
+            taches = lister_taches()
+            # Filtrer les tâches "À faire"
+            a_faire = [
+                t["properties"]["Name"]["title"][0]["text"]["content"]
+                for t in taches["results"]
+                if t["properties"]["Status"]["status"]["name"] == "À faire"
+            ]
+            print("Résumé :", a_faire)
+
+        elif type_action == "delete":
+            supprimer_tache(params.get("id"))
+            print("Tâche supprimée")
+
 @app.post("/execute")
 def execute():
     executer_action(request.json)
     return {"status": "ok"}
 
 app.run(host="0.0.0.0", port=5001)
+
