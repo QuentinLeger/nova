@@ -90,10 +90,10 @@ def ask_nova(message: str):
     
     Pour recherche_web :
     - Si l’utilisateur dit "cherche counterStike sur YouTube", tu renvoies :
-    {"action": "recherche_web", "params": {"type": "youtube", "query": "counterStrike"}, "reponse": "......"}
+    {{"action": "recherche_web", "params": {{"type": "youtube", "query": "counterStrike"}}, "reponse": "......"}}
     
     - Si l’utilisateur dit "cherche quelquechose sur Google", tu renvoies :
-    {"action": "recherche_web", "params": {"type": "google", "query": "quelquechose"}, "reponse": "......"}
+    {{"action": "recherche_web", "params": {{"type": "google", "query": "quelquechose"}}, "reponse": "......"}}
 
     Macros disponibles : coding, vibe-coding, stream
     Toujours mettre une URL complète avec https://
