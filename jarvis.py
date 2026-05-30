@@ -17,7 +17,7 @@ with open("portable.json") as f:
     CONFIG = json.load(f)
 
 async def generer_voix(texte):
-    communicate = edge_tts.Communicate(texte, voice="fr-FR-DeniseNeural", rate="-10%", pitch="-5Hz")
+    communicate = edge_tts.Communicate(texte, voice="fr-FR-VivienneMultilingualNeural", rate="+2%", pitch="-5Hz")
     await communicate.save("output.mp3")
 
 
@@ -36,6 +36,8 @@ def speak():
         pygame.time.Clock().tick(10)
 
     return {"status": "ok"}
+
+
 
 @app.post("/save_file")
 def save_file():
