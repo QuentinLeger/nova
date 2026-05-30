@@ -55,7 +55,7 @@ def ecouter():
 
 api_key = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=api_key)
-DEVICE = "pc_portable"
+DEVICE = "pc_fixe"
 
 def ask_nova(message: str):
     prompt = f"""
@@ -70,6 +70,7 @@ def ask_nova(message: str):
     - ouvrir_app
     - macro
     - analyse_seance
+    - recherche_web
 
     Pour analyse_seance : si je dis "ma séance" = today, "dernière séance" = last, "cette semaine" = week
 
@@ -86,6 +87,13 @@ def ask_nova(message: str):
     {{"action": "repondre", "device": "pc_fixe", "params": {{}}, "reponse": "Voici ma réponse."}}
     {{"action": "analyse_seance", "device": "pc_fixe", "params": {{"periode": "last"}}, "reponse": "J'analyse ta dernière séance !"}}
     {{"action": "macro", "device": "pc_fixe", "params": {{"nom": "stream_minecraft"}}, "reponse": "Je prépare tout pour ton stream Minecraft !"}}
+    
+    Pour recherche_web :
+    - Si l’utilisateur dit "cherche X sur YouTube", tu renvoies :
+      {"action": "recherche_web", "params": {"type": "youtube", "query": "X"}}
+    
+    - Si l’utilisateur dit "cherche X sur Google", tu renvoies :
+      {"action": "recherche_web", "params": {"type": "google", "query": "X"}}
 
     Macros disponibles : coding, vibe-coding, stream
     Toujours mettre une URL complète avec https://

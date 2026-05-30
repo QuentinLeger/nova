@@ -80,6 +80,22 @@ def executer_action(data):
         else:
             print(f"Macro inconnue : {nom}")
 
+    elif action == "recherche_web":
+        params = data["params"]
+        type_rech = params.get("type")
+        query = params.get("query", "").replace(" ", "+")
+
+        if type_rech == "youtube":
+            url = f"https://www.youtube.com/results?search_query={query}"
+        elif type_rech == "google":
+            url = f"https://www.google.com/search?q={query}"
+        else:
+            print("Type de recherche inconnu")
+            return
+
+        chrome.open(url)
+        print(f"Recherche lancée : {url}")
+
 @app.post("/execute")
 def execute():
     executer_action(request.json)
