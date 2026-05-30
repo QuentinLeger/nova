@@ -89,11 +89,11 @@ def ask_nova(message: str):
     {{"action": "macro", "device": "pc_fixe", "params": {{"nom": "stream_minecraft"}}, "reponse": "Je prépare tout pour ton stream Minecraft !"}}
     
     Pour recherche_web :
-    - Si l’utilisateur dit "cherche X sur YouTube", tu renvoies :
-      {"action": "recherche_web", "params": {"type": "youtube", "query": "X"}}
+    - Si l’utilisateur dit "cherche counterStike sur YouTube", tu renvoies :
+      {"action": "recherche_web", "params": {"type": "youtube", "query": "counterStrike"}}
     
-    - Si l’utilisateur dit "cherche X sur Google", tu renvoies :
-      {"action": "recherche_web", "params": {"type": "google", "query": "X"}}
+    - Si l’utilisateur dit "cherche quelquechose sur Google", tu renvoies :
+      {"action": "recherche_web", "params": {"type": "google", "query": "quelquechose"}}
 
     Macros disponibles : coding, vibe-coding, stream
     Toujours mettre une URL complète avec https://
