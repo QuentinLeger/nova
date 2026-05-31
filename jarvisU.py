@@ -125,6 +125,10 @@ def ask_nova(message: str):
     Plutôt que : "J'ouvre Steam dès maintenant."
     Tu t'appelles Nova, tu es l'assistante de Quentin.
     Tu es professionnelle, efficace, avec une légère touche d'humour.
+    
+    Pour les dates dans gestion_taches, toujours utiliser le format ISO : YYYY-MM-DD
+    Exemple : "demain" → "2026-06-01", "aujourd'hui" → "2026-05-31"
+    La date d'aujourd'hui est {datetime.now().strftime("%Y-%m-%d")}
 
     Phrase : "{message}"
     """
@@ -265,12 +269,19 @@ def gerer_taches(params, device):
     if type_action == "add":
         titre = params.get("titre")
         date = params.get("date")
+
+        if date == "demain":
+            date = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+        elif date in ["aujourd'hui", "aujourd hui"]:
+            date = datetime.now().strftime("%Y-%m-%d")
+        elif date == "après-demain":
+            date = (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d")
+
         result = ajouter_tache(titre, date)
-        print(f"Notion response : {result}")  # debug
         if result.get("object") == "page":
-            parler("Tâche ajoutée avec succès, Quentin.", device)
+            parler(f"Tâche ajoutée, Quentin.", device)  # manquait !
         else:
-            parler("Erreur lors de l'ajout de la tâche.", device)
+            parler(f"Erreur lors de l'ajout, Quentin.", device)
 
     elif type_action in ["list", "resume"]:
         taches = lister_taches()
@@ -421,6 +432,11 @@ else:
                 elif action == "dire_heure":
                     heure = datetime.now().strftime("%H:%M")
                     parler(f"Il est {heure}")
+
+                elif action == "gestion_taches":
+                    gerer_taches(result.get("params", {}), device)
+
                 else:
                     send_to_device(device, result)
                     parler(reponse,device)
+
