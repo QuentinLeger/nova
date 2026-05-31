@@ -105,8 +105,8 @@ def executer_action(data):
         if type_action == "add":
             titre = params.get("titre")
             date = params.get("date")
-            ajouter_tache(titre, date)
-            print(f"Tâche ajoutée : {titre}")
+            result = ajouter_tache(titre, date)
+            print(f"Notion response : {result}")  # debug complet
 
 
         elif type_action == "list" or type_action == "resume":
