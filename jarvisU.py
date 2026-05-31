@@ -266,6 +266,7 @@ def gerer_taches(params, device):
         titre = params.get("titre")
         date = params.get("date")
         result = ajouter_tache(titre, date)
+        print(f"Notion response : {result}")  # debug
         if result.get("object") == "page":
             parler("Tâche ajoutée avec succès, Quentin.", device)
         else:
