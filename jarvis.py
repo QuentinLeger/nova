@@ -105,24 +105,74 @@ def executer_action(data):
         if type_action == "add":
             titre = params.get("titre")
             date = params.get("date")
-            print("marche la")
             ajouter_tache(titre, date)
             print(f"Tâche ajoutée : {titre}")
 
-        elif type_action == "list":
-            taches = lister_taches()
-            print("Tâches :", taches)
 
-        elif type_action == "resume":
-            taches = lister_taches()
-            # Filtrer les tâches "À faire"
-            a_faire = [
-                t["properties"]["Name"]["title"][0]["text"]["content"]
-                for t in taches["results"]
-                if t["properties"]["Status"]["status"]["name"] == "À faire"
-            ]
-            print("Résumé :", a_faire)
+        elif type_action == "list" or type_action == "resume":
 
+            taches = lister_taches()
+
+            # Parse les tâches
+
+            liste = []
+
+            for t in taches.get("results", []):
+
+                try:
+
+                    nom = t["properties"]["Task name"]["title"][0]["text"]["content"]
+
+                    statut = t["properties"]["Status"]["status"]["name"]
+
+                    liste.append(f"{nom} ({statut})")
+
+                except:
+
+                    pass
+
+            texte_taches = "\n".join(liste) if liste else "Aucune tâche trouvée"
+
+            # Groq fait un résumé oral
+
+            from groq import Groq
+
+            from dotenv import load_dotenv
+
+            load_dotenv()
+
+            client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+            response = client.chat.completions.create(
+
+                model="llama-3.3-70b-versatile",
+
+                messages=[{
+
+                    "role": "user",
+
+                    "content": f"""
+
+        Voici les tâches de Quentin :
+
+        {texte_taches}
+
+
+        Fais un résumé oral court et naturel en 2-3 phrases.
+
+        Parle à Quentin directement, sois concis.
+
+                    """
+
+                }]
+
+            )
+
+            resume = response.choices[0].message.content
+
+            # Renvoie le résumé à Ubuntu pour qu'il parle
+
+            requests.post("http://192.168.1.36:5001/speak", json={"text": resume})
         elif type_action == "delete":
             supprimer_tache(params.get("id"))
             print("Tâche supprimée")
