@@ -13,19 +13,21 @@ headers = {
     "Content-Type": "application/json"
 }
 
+
 def ajouter_tache(titre, date=None):
     data = {
         "parent": {"database_id": DATABASE_ID},
         "properties": {
-            "Name": {"title": [{"text": {"content": titre}}]},
-            "Status": {"status": {"name": "À faire"}}
+            "Task name": {"title": [{"text": {"content": titre}}]},
+            "Status": {"status": {"name": "Not started"}}
         }
     }
     if date:
-        data["properties"]["Date"] = {"date": {"start": date}}
+        data["properties"]["Due date"] = {"date": {"start": date}}
 
     r = requests.post("https://api.notion.com/v1/pages", headers=headers, json=data)
     return r.json()
+
 
 def lister_taches():
     r = requests.post(
