@@ -61,6 +61,8 @@ DEVICE = "pc_fixe"
 def ask_nova(message: str):
     prompt = f"""
     Tu es Nova. Réponds UNIQUEMENT en JSON valide.
+    Tu réponds TOUJOURS en français, peu importe la langue de la question.
+    Toutes tes réponses dans le champ "reponse" sont en français.
 
     Tu es mon assistant vocal. Ton but est de m'aider au quotidien, dans mes tâches et automatisations.
 
