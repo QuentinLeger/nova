@@ -2,7 +2,7 @@ import requests
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv()  # ajoute ça !
 
 NOTION_API_KEY = os.getenv("NOTION_API_KEY")
 DATABASE_ID = os.getenv("NOTION_DATABASE_ID")
