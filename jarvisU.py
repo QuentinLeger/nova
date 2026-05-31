@@ -9,6 +9,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from groq import Groq
 from dotenv import load_dotenv
+from Notion import ajouter_tache, lister_taches, supprimer_tache
 
 load_dotenv()
 
@@ -258,6 +259,51 @@ Génère un programme pour ma prochaine séance en JSON valide uniquement, sans 
 
     return programme
 
+def gerer_taches(params, device):
+    type_action = params.get("type")
+
+    if type_action == "add":
+        titre = params.get("titre")
+        date = params.get("date")
+        result = ajouter_tache(titre, date)
+        if result.get("object") == "page":
+            parler("Tâche ajoutée avec succès, Quentin.", device)
+        else:
+            parler("Erreur lors de l'ajout de la tâche.", device)
+
+    elif type_action in ["list", "resume"]:
+        taches = lister_taches()
+        liste = []
+        for t in taches.get("results", []):
+            try:
+                nom = t["properties"]["Task name"]["title"][0]["text"]["content"]
+                statut = t["properties"]["Status"]["status"]["name"]
+                liste.append(f"{nom} ({statut})")
+            except:
+                pass
+
+        texte_taches = "\n".join(liste) if liste else "Aucune tâche trouvée"
+
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{
+                "role": "user",
+                "content": f"""
+Voici les tâches de Quentin :
+{texte_taches}
+
+Fais un résumé oral court et naturel en 2-3 phrases.
+Parle à Quentin directement, sois concis.
+                """
+            }]
+        )
+        parler(response.choices[0].message.content, device)
+
+    elif type_action == "delete":
+        supprimer_tache(params.get("id"))
+        parler("Tâche supprimée, Quentin.", device)
+
+
 # -----------------------------
 # PROGRAMME PRINCIPAL
 # -----------------------------
@@ -312,9 +358,15 @@ if mode == "ecrit":
         elif action == "dire_heure":
             heure = datetime.now().strftime("%H:%M")
             parler(f"Il est {heure}",device)
+
+        elif action == "gestion_taches":
+            gerer_taches(result.get("params", {}), device)
+
         else:
             send_to_device(device, result)
             parler(reponse,device)
+
+
 
 
 else:
