@@ -281,9 +281,9 @@ def gerer_taches(params, device):
 
         result = ajouter_tache(titre, date)
         if result.get("object") == "page":
-            parler(f"Votre tâche a été ajoutée Quentin.", device)
+            parler(f"Votre tâche a été ajoutée, Quentin.", device)
         else:
-            parler(f"Erreur lors de l'ajout Quentin.", device)
+            parler(f"Erreur lors de l'ajout, Quentin.", device)
 
     elif type_action in ["list", "resume"]:
         taches = lister_taches()
