@@ -286,13 +286,19 @@ def gerer_taches(params, device):
             parler(f"Erreur lors de l'ajout, Quentin.", device)
 
     elif type_action in ["list", "resume"]:
+        date_filtre = params.get("Due date")
         taches = lister_taches()
         liste = []
         for t in taches.get("results", []):
             try:
                 nom = t["properties"]["Task name"]["title"][0]["text"]["content"]
                 statut = t["properties"]["Status"]["status"]["name"]
-                liste.append(f"{nom} ({statut})")
+                if date_filtre:
+                    due = t["properties"].get("Due date", {}).get("date")
+                    if due and due.get("start") == date_filtre:
+                        liste.append(f"{nom} ({statut})")
+                else:
+                    liste.append(f"{nom} ({statut})")
             except:
                 pass
 
