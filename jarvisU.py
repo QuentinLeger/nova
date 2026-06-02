@@ -286,7 +286,7 @@ def gerer_taches(params, device):
             parler(f"Erreur lors de l'ajout, Quentin.", device)
 
     elif type_action in ["list", "resume"]:
-        date_filtre = params.get("Due date")
+        date_filtre = params.get("date")
         taches = lister_taches()
         liste = []
         for t in taches.get("results", []):
