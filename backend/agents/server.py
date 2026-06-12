@@ -9,12 +9,12 @@ import pygame
 import os
 from datetime import datetime
 from dotenv import load_dotenv
-from Notion import ajouter_tache, lister_taches, supprimer_tache
+from notionTasks import ajouter_tache, lister_taches, supprimer_tache
 
 load_dotenv()
 app = Flask(__name__)
 
-with open("portable.json") as f:
+with open("../config/portable.json") as f:
     CONFIG = json.load(f)
 
 async def generer_voix(texte):
@@ -31,7 +31,7 @@ def speak():
 
     asyncio.run(generer_voix(texte))
 
-    pygame.mixer.music.load("output.mp3")
+    pygame.mixer.music.load("../../output.mp3")
     pygame.mixer.music.play()
     while pygame.mixer.music.get_busy():
         pygame.time.Clock().tick(10)
