@@ -7,6 +7,9 @@ from dotenv import load_dotenv
 from sport import analyser_seances, generer_prochaine_seance
 from notionTasks import gerer_taches
 from audio import parler, ecouter
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
 
@@ -14,6 +17,7 @@ api_key = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 DEVICE = "pc_fixe"
 
+app = FastAPI()
 
 
 ### Principal prompt for NOVA
@@ -118,67 +122,85 @@ def ask_nova(message: str):
 ### End of prompt
 
 
-
 ### Send to a device
 def send_to_device(device, payload):
-    DEVICE_IPS = {
-        "pc_fixe": "192.168.1.18:5001",
-        "pc_portable": "10.13.33.131:5001"
-    }
-    if device not in DEVICE_IPS:
-        device = DEVICE
+    DEVICE_IPS = {"pc_fixe": "192.168.1.18:5001", "pc_portable": "10.13.33.131:5001"}
+    url = f"http://{DEVICE_IPS.get(device, DEVICE)}/execute"
     try:
-        url = f"http://{DEVICE_IPS[device]}/execute"
         requests.post(url, json=payload, timeout=5)
     except Exception as e:
         print(f"Appareil injoignable : {e}")
 
 
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    print("[NOVA] Interface connectée via WebSocket !")
 
+    try:
+        while True:
+            # 1. Python attend le texte envoyé par le micro du navigateur Web
+            data = await websocket.receive_text()
+            payload = json.loads(data)
+            user_message = payload.get("user_message", "")
 
-def executer(result):
-    device = result.get("device", DEVICE)
-    action = result.get("action", "")
-    reponse = result.get("reponse", "")
+            # On nettoie le mot "Nova" si l'utilisateur l'a dit
+            if user_message and "nova" in user_message.lower():
+                commande = user_message.lower().replace("nova", "").strip()
 
-    if action == "analyse_seance":
-        periode = result.get("params", {}).get("periode", "last")
-        parler("Je lance l'analyse de ta séance, ça arrive !", device)
-        analyse = analyser_seances(periode=periode)
-        generer_prochaine_seance(analyse)
-        parler(analyse, device)  # ← direct, sans résumé
+                if commande:
+                    # 2. On demande à Groq (Llama) d'analyser la commande
+                    result = ask_nova(commande)
+                    print(f"[NOVA JSON] {result}")
 
-    elif action == "dire_heure":
-        parler(f"Il est {datetime.now().strftime('%H:%M')}",device)
+                    # 3. ON ENVOIE DIRECTEMENT LA RÉPONSE TEXTE À L'ÉCRAN
+                    # C'est ça qui déclenche l'effet machine à écrire dans le HTML !
+                    await websocket.send_json({
+                        "type": "speech",
+                        "text": result.get("reponse", "")
+                    })
 
-    elif action == "gestion_taches":
-        gerer_taches(result.get("params", {}),device)
+                    # 4. ICI ON REPREND TON ANCIENNE LOGIQUE 'EXECUTER'
+                    device = result.get("device", DEVICE)
+                    action = result.get("action", "")
 
+                    if action == "analyse_seance":
+                        periode = result.get("params", {}).get("periode", "last")
+                        # On prévient à l'oral
+                        parler("Je lance l'analyse de ta séance, ça arrive !", device)
 
-    else :
-        send_to_device(device,result)
-        parler(result["reponse"],device)
+                        # Tu lances tes scripts Python de sport
+                        analyse = analyser_seances(periode=periode)
+                        generer_prochaine_seance(analyse)
 
+                        # On envoie les données au widget HTML pour qu'il s'affiche !
+                        await websocket.send_json({
+                            "type": "widget_sport",
+                            "data": {"exercice": "Séance analysée !", "stats": analyse}
+                        })
+                        # Nova le dit aussi à l'oral
+                        parler(analyse, device)
 
-# -----------------------------
-# PROGRAMME PRINCIPAL
-# -----------------------------
+                    elif action == "dire_heure":
+                        parler(f"Il est {datetime.now().strftime('%H:%M')}", device)
 
-mode = input("Mode (ecrit/oral) : ")
+                    elif action == "gestion_taches":
+                        # Ton script Notion (tu peux aussi lui ajouter un websocket.send_json ensuite pour afficher le widget tâche !)
+                        gerer_taches(result.get("params", {}), device)
 
-if mode == "ecrit":
-    message = input("Votre requête : ")
-    if message:
-        result = ask_nova(message)
-        print(result)
-        executer(result)
+                        await websocket.send_json({
+                            "type": "widget_taches",
+                            "data": {"titre": result.get("params", {}).get("titre", "Nouvelle tâche")}
+                        })
 
-else:
-    while True:
-        message = ecouter()
-        if message and "nova" in message.lower():
-            commande = message.lower().replace("nova", "").strip()
-            if commande:
-                result = ask_nova(commande)
-                print(result)
-                executer(result)
+                    else:
+                        # Ouvre les sites, apps, macros sur tes PC via Flask
+                        send_to_device(device, result)
+                        parler(result["reponse"], device)
+
+    except WebSocketDisconnect:
+        print("[NOVA] Interface déconnectée.")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
