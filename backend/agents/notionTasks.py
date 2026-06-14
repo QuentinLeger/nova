@@ -94,10 +94,15 @@ def gerer_taches(params, device):
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[ChatCompletionUserMessageParam(role="user", content=f"""
-            Voici les tâches de Quentin :
-            {texte_taches}
-            ...
-                """)]
+                Tu es Nova, l'assistante vocale de Quentin.
+                Résume ces tâches à l'oral en 2-3 phrases max, en français, de façon naturelle et chaleureuse.
+                Mets en avant les tâches urgentes ou proches si il y en a.
+                Utilise "vous" pour t'adresser à Quentin.
+                N'utilise pas d'apostrophes contractées (J' → Je, etc.)
+
+                Tâches :
+                {texte_taches}
+            """)]
         )
         parler(response.choices[0].message.content, device)
 

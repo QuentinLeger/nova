@@ -147,7 +147,7 @@ def executer(result):
         analyse = analyser_seances(periode=periode)
         print(analyse)
         try:
-            requests.post("https://192.168.1.18:5001/sace_file", json={"nom":"recap_séance.txt","contenu":analyse},timeout=5)
+            requests.post("http://192.168.1.18:5001/sace_file", json={"nom":"recap_séance.txt","contenu":analyse},timeout=5)
         except:
             pass
         generer_prochaine_seance(analyse)
@@ -169,7 +169,7 @@ def executer(result):
 
     else :
         send_to_device(device,result)
-        parler(reponse,device)
+        parler(result["reponse"],device)
 
 
 # -----------------------------

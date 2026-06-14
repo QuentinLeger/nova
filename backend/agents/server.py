@@ -2,14 +2,12 @@ from flask import Flask, request
 import subprocess
 import webbrowser
 import json
-import requests
 import asyncio
 import edge_tts
 import pygame
-import os
 from datetime import datetime
 from dotenv import load_dotenv
-from notionTasks import ajouter_tache, lister_taches, supprimer_tache
+
 
 load_dotenv()
 app = Flask(__name__)
