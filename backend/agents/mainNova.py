@@ -143,22 +143,10 @@ def executer(result):
 
     if action == "analyse_seance":
         periode = result.get("params", {}).get("periode", "last")
-        parler("Je lance l'analyse de ta séance, ça arrive !",device)
+        parler("Je lance l'analyse de ta séance, ça arrive !", device)
         analyse = analyser_seances(periode=periode)
-        print(analyse)
-        try:
-            requests.post("http://192.168.1.18:5001/sace_file", json={"nom":"recap_séance.txt","contenu":analyse},timeout=5)
-        except:
-            pass
         generer_prochaine_seance(analyse)
-        resume = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": f"""
-            Sur la base de cette analyse : {analyse}
-            Fais un résumé TRÈS court en 2-3 phrases max pour être lu à voix haute.
-                        """}]
-        )
-        parler(resume.choices[0].message.content, device)
+        parler(analyse, device)  # ← direct, sans résumé
 
     elif action == "dire_heure":
         parler(f"Il est {datetime.now().strftime('%H:%M')}",device)
