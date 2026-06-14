@@ -29,7 +29,7 @@ def speak():
 
     asyncio.run(generer_voix(texte))
 
-    pygame.mixer.music.load("../../output.mp3")
+    pygame.mixer.music.load("output.mp3")
     pygame.mixer.music.play()
     while pygame.mixer.music.get_busy():
         pygame.time.Clock().tick(10)
