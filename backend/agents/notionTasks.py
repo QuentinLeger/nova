@@ -2,7 +2,6 @@ import requests
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from groq.types.chat import ChatCompletionUserMessageParam
-from mainNova import parler_async
 from groq import Groq
 import os
 
@@ -52,7 +51,7 @@ def supprimer_tache(page_id):
 
 
 #####
-def gerer_taches(params, device):
+def gerer_taches(params, device,parler):
     type_action = params.get("type")
 
     if type_action == "add":
@@ -68,9 +67,9 @@ def gerer_taches(params, device):
 
         result = ajouter_tache(titre, date)
         if result.get("object") == "page":
-            parler_async(f"Votre tâche a été ajoutée, Quentin.", device)
+            parler(f"Votre tâche a été ajoutée, Quentin.", device)
         else:
-            parler_async(f"Erreur lors de l'ajout, Quentin.", device)
+            parler(f"Erreur lors de l'ajout, Quentin.", device)
 
     elif type_action in ["list", "resume"]:
         date_filtre = params.get("date")
@@ -104,10 +103,10 @@ def gerer_taches(params, device):
                 {texte_taches}
             """)]
         )
-        parler_async(response.choices[0].message.content, device)
+        parler(response.choices[0].message.content, device)
 
     elif type_action == "delete":
         supprimer_tache(params.get("id"))
-        parler_async("Tâche supprimée, Quentin.", device)
+        parler("Tâche supprimée, Quentin.", device)
 
 ##### partie gestion de taches

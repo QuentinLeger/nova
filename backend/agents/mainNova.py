@@ -184,7 +184,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         parler_async(reponse, device)
 
                     elif action == "gestion_taches":
-                        gerer_taches(result.get("params", {}), device)
+                        gerer_taches(result.get("params", {}), device, parler_async)
                         await websocket.send_json({
                             "type": "widget_taches",
                             "data": {"titre": result.get("params", {}).get("titre", "Nouvelle tâche")}
