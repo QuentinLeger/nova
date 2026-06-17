@@ -46,10 +46,15 @@
         const recognition = new SpeechRecognition();
         recognition.lang = 'fr-FR';
         recognition.interimResults = true;
+        recognition.continuous = true; // Empêche le micro de couper brutalement entre les mots
 
         document.getElementById("mic-btn").addEventListener("click", () => {
-            recognition.start();
-            userSpeech.innerText = "Je vous écoute...";
+            try {
+                recognition.start();
+                userSpeech.innerText = "Je vous écoute...";
+            } catch (e) {
+                console.log("La reconnaissance vocale est déjà active.");
+            }
         });
 
         recognition.onresult = (event) => {
@@ -58,16 +63,29 @@
                 if (event.results[i].isFinal) final += event.results[i][0].transcript;
                 else interim += event.results[i][0].transcript;
             }
-            userSpeech.innerText = "Quentin : " + (final || interim);
 
-            // Si la phrase contient "Nova" et est terminée, on l'envoie !
-            if (final && final.toLowerCase().includes("nova")) {
-                ws.send(JSON.stringify({ "user_message": final }));
+            const currentText = final || interim;
+            userSpeech.innerText = "Quentin : " + currentText;
+
+            // Détection du mot clé "Nova"
+            if (currentText.toLowerCase().includes("nova")) {
+                console.log("Mot clé 'Nova' détecté ! Envoi à Python...");
+                ws.send(JSON.stringify({ "user_message": currentText }));
+
+                // Si la phrase est validée comme finale, on réinitialise pour la prochaine phrase
+                if (event.results[event.results.length - 1].isFinal) {
+                    final = '';
+                }
             }
         };
 
-        // Relance auto du micro pour du "Toujours à l'écoute"
-        recognition.onend = () => { recognition.start(); };
+        // Relance automatique intelligente si le navigateur coupe le micro après un long silence
+        recognition.onend = () => {
+            console.log("Le micro s'est coupé. Relance en cours...");
+            setTimeout(() => {
+                try { recognition.start(); } catch(e) {}
+            }, 400);
+        };
 
         // EFFET MACHINE À ÉCRIRE
         function typeWriter(text, element, i = 0) {

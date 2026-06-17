@@ -45,6 +45,7 @@ def save_file():
     chemin = f"C:/Users/atomi/OneDrive/Bureau/{nom}"
     with open(chemin, "w", encoding="utf-8") as f:
         f.write(contenu)
+
     print(f"Fichier sauvegardé : {chemin}")
     return {"status": "ok"}
 
