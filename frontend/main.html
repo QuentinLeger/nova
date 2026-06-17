@@ -6,17 +6,20 @@
     <style>
         body { background: #070b12; color: #00e5ff; font-family: 'Segoe UI', monospace; padding: 40px; }
         .console { border-left: 3px solid #00e5ff; padding-left: 20px; margin-bottom: 30px; }
-        #user-speech { color: #88a0b0; font-style: italic; font-size: 18px; min-height: 25px;}
+        #user-speech { color: #88a0b0; font-style: italic; font-size: 18px; min-height: 25px; }
         #nova-speech { color: #ffffff; font-size: 24px; font-weight: bold; text-shadow: 0 0 8px #00e5ff; min-height: 50px; margin-top: 10px; }
         .widgets-container { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px; }
         .widget { display: none; border: 1px solid #00e5ff; background: rgba(0, 229, 255, 0.05); box-shadow: 0 0 15px rgba(0, 229, 255, 0.2); padding: 20px; border-radius: 8px; width: 280px; animation: fadeIn 0.5s ease-out; }
         button { background: #00e5ff; color: #070b12; border: none; padding: 12px 24px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        #mic-btn.active { background: #ff007f; color: #fff; }
+        #status { font-size: 12px; color: #88a0b0; margin-top: 8px; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
     <button id="mic-btn">🎙️ ACTIVER NOVA</button>
+    <div id="status">WebSocket : connexion...</div>
 
     <div class="console">
         <div id="user-speech">En attente...</div>
@@ -29,95 +32,156 @@
             <p id="sport-ex"></p>
             <p id="sport-status" style="font-size: 12px; color: #88a0b0;"></p>
         </div>
-
         <div id="widget-taches" class="widget">
-            <h3 style="margin-top:0; color:#ff007f; border-color:#ff007f">📝 NOTION TASK</h3>
+            <h3 style="margin-top:0; color:#ff007f;">📝 NOTION TASK</h3>
             <p id="tache-titre"></p>
         </div>
     </div>
 
     <script>
-        const ws = new WebSocket("ws://localhost:8000/ws");
-        const userSpeech = document.getElementById("user-speech");
-        const novaSpeech = document.getElementById("nova-speech");
+        // ─── ÉLÉMENTS DOM ────────────────────────────────────────────────
+        const userSpeech  = document.getElementById("user-speech");
+        const novaSpeech  = document.getElementById("nova-speech");
+        const micBtn      = document.getElementById("mic-btn");
+        const statusEl    = document.getElementById("status");
 
-        // RECONNAISSANCE VOCALE NAVIGATEUR
+        // ─── WEBSOCKET ───────────────────────────────────────────────────
+        let ws;
+
+        function connectWS() {
+            ws = new WebSocket("ws://localhost:8000/ws");
+
+            ws.onopen = () => {
+                statusEl.innerText = "WebSocket : connecté ✅";
+                console.log("[WS] Connecté au serveur Python");
+            };
+
+            ws.onclose = () => {
+                statusEl.innerText = "WebSocket : déconnecté ❌ — reconnexion dans 3s...";
+                console.warn("[WS] Connexion fermée. Tentative de reconnexion...");
+                setTimeout(connectWS, 3000);
+            };
+
+            ws.onerror = (e) => {
+                statusEl.innerText = "WebSocket : erreur de connexion ❌";
+                console.error("[WS] Erreur :", e);
+            };
+
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                console.log("[WS] Message reçu :", msg);
+
+                if (msg.type === "speech") {
+                    typeWriter(msg.text, novaSpeech);
+                }
+                else if (msg.type === "widget_sport") {
+                    document.getElementById("sport-ex").innerText     = msg.data.exercice;
+                    document.getElementById("sport-status").innerText = msg.data.stats;
+                    document.getElementById("widget-sport").style.display = "block";
+                }
+                else if (msg.type === "widget_taches") {
+                    document.getElementById("tache-titre").innerText = msg.data.titre;
+                    document.getElementById("widget-taches").style.display = "block";
+                }
+            };
+        }
+
+        connectWS();
+
+        // ─── ENVOI AU SERVEUR ────────────────────────────────────────────
+        function envoyerCommande(texte) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                console.warn("[WS] Pas connecté, impossible d'envoyer.");
+                statusEl.innerText = "WebSocket : non connecté ❌";
+                return;
+            }
+            const payload = JSON.stringify({ user_message: texte });
+            console.log("[WS] Envoi →", payload);
+            ws.send(payload);
+        }
+
+        // ─── RECONNAISSANCE VOCALE ───────────────────────────────────────
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
         recognition.lang = 'fr-FR';
         recognition.interimResults = true;
-        recognition.continuous = true; // Empêche le micro de couper brutalement entre les mots
+        recognition.continuous = true;
 
-        document.getElementById("mic-btn").addEventListener("click", () => {
-            try {
+        let micActif = false;
+        let dejaEnvoye = false; // empêche le double envoi pendant qu'une phrase est en cours
+
+        micBtn.addEventListener("click", () => {
+            if (!micActif) {
                 recognition.start();
-                userSpeech.innerText = "Je vous écoute...";
-            } catch (e) {
-                console.log("La reconnaissance vocale est déjà active.");
+                // Le flag micActif est mis à true dans onstart
+            } else {
+                recognition.stop();
+                micActif = false;
+                micBtn.classList.remove("active");
+                micBtn.innerText = "🎙️ ACTIVER NOVA";
+                userSpeech.innerText = "Micro désactivé.";
             }
         });
 
+        recognition.onstart = () => {
+            micActif = true;
+            micBtn.classList.add("active");
+            micBtn.innerText = "🔴 EN ÉCOUTE...";
+            userSpeech.innerText = "Je vous écoute...";
+            console.log("[MIC] Démarré");
+        };
+
         recognition.onresult = (event) => {
-            let interim = '', final = '';
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) final += event.results[i][0].transcript;
-                else interim += event.results[i][0].transcript;
+            let texteInterim = '';
+            let texteFinal   = '';
+
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                if (event.results[i].isFinal) {
+                    texteFinal += event.results[i][0].transcript;
+                } else {
+                    texteInterim += event.results[i][0].transcript;
+                }
             }
 
-            const currentText = final || interim;
-            userSpeech.innerText = "Quentin : " + currentText;
+            const texteAffiche = texteFinal || texteInterim;
+            userSpeech.innerText = "Quentin : " + texteAffiche;
 
-            // Détection du mot clé "Nova"
-            if (currentText.toLowerCase().includes("nova")) {
-                console.log("Mot clé 'Nova' détecté ! Envoi à Python...");
-                ws.send(JSON.stringify({ "user_message": currentText }));
-
-                // Si la phrase est validée comme finale, on réinitialise pour la prochaine phrase
-                if (event.results[event.results.length - 1].isFinal) {
-                    final = '';
-                }
+            // On envoie SEULEMENT quand la phrase est finale ET contient "nova"
+            if (texteFinal && texteFinal.toLowerCase().includes("nova") && !dejaEnvoye) {
+                dejaEnvoye = true;
+                console.log("[MIC] Commande finale détectée :", texteFinal);
+                envoyerCommande(texteFinal);
+                // Réinitialisation après un court délai pour éviter le double envoi
+                setTimeout(() => { dejaEnvoye = false; }, 1500);
             }
         };
 
-        // Relance automatique intelligente si le navigateur coupe le micro après un long silence
-        let isRunning = false;
-
-document.getElementById("mic-btn").addEventListener("click", () => {
-    if (!isRunning) {
-        recognition.start();
-        isRunning = true;
-        userSpeech.innerText = "Je vous écoute...";
-    }
-});
-
-recognition.onstart = () => { isRunning = true; };
-
-recognition.onend = () => {
-    isRunning = false;
-    // Relance immédiate sans délai
-    setTimeout(() => {
-        if (!isRunning) {
-            try {
-                recognition.start();
-                isRunning = true;
-            } catch(e) {
-                console.warn("Erreur relance micro :", e);
+        recognition.onend = () => {
+            console.log("[MIC] Fin de session");
+            // Relance auto seulement si le micro était actif (pas si on l'a stoppé manuellement)
+            if (micActif) {
+                setTimeout(() => {
+                    try { recognition.start(); } catch(e) { console.warn("[MIC] Erreur relance :", e); }
+                }, 150);
             }
-        }
-    }, 100); // 100ms au lieu de 400ms
-};
+        };
 
-recognition.onerror = (event) => {
-    console.warn("Erreur reconnaissance :", event.error);
-    isRunning = false;
-    if (event.error !== 'aborted') {
-        setTimeout(() => {
-            try { recognition.start(); isRunning = true; } catch(e) {}
-        }, 300);
-    }
-};
+        recognition.onerror = (event) => {
+            console.warn("[MIC] Erreur :", event.error);
+            // 'no-speech' est normal (silence trop long), on relance sans paniquer
+            if (event.error === 'no-speech' || event.error === 'audio-capture') {
+                // onend va s'en charger
+                return;
+            }
+            if (event.error === 'not-allowed') {
+                userSpeech.innerText = "⚠️ Accès au micro refusé par le navigateur.";
+                micActif = false;
+                micBtn.classList.remove("active");
+                micBtn.innerText = "🎙️ ACTIVER NOVA";
+            }
+        };
 
-        // EFFET MACHINE À ÉCRIRE
+        // ─── EFFET MACHINE À ÉCRIRE ───────────────────────────────────────
         function typeWriter(text, element, i = 0) {
             if (i === 0) element.innerHTML = "";
             if (i < text.length) {
@@ -125,24 +189,6 @@ recognition.onerror = (event) => {
                 setTimeout(() => typeWriter(text, element, i + 1), 30);
             }
         }
-
-        // CAPTURE DES ORDRES DE PYTHON
-        ws.onmessage = (event) => {
-            const msg = JSON.parse(event.data);
-
-            if (msg.type === "speech") {
-                typeWriter(msg.text, novaSpeech);
-            }
-            else if (msg.type === "widget_sport") {
-                document.getElementById("sport-ex").innerText = msg.data.exercice;
-                document.getElementById("sport-status").innerText = msg.data.stats;
-                document.getElementById("widget-sport").style.display = "block";
-            }
-            else if (msg.type === "widget_taches") {
-                document.getElementById("tache-titre").innerText = msg.data.titre;
-                document.getElementById("widget-taches").style.display = "block";
-            }
-        };
     </script>
 </body>
 </html>
