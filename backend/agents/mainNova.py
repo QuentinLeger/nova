@@ -163,43 +163,37 @@ async def websocket_endpoint(websocket: WebSocket):
                         "text": result.get("reponse", "")
                     })
 
-                    # 4. ICI ON REPREND TON ANCIENNE LOGIQUE 'EXECUTER'
                     device = result.get("device", DEVICE)
                     action = result.get("action", "")
+                    reponse = result.get("reponse", "")
 
                     if action == "analyse_seance":
                         periode = result.get("params", {}).get("periode", "last")
-                        # On prévient à l'oral
-                        parler_async("Je lance l'analyse de ta séance, ça arrive !", device)
-
-                        # Tu lances tes scripts Python de sport
                         analyse = analyser_seances(periode=periode)
                         generer_prochaine_seance(analyse)
-
-                        # On envoie les données au widget HTML pour qu'il s'affiche !
                         await websocket.send_json({
                             "type": "widget_sport",
                             "data": {"exercice": "Séance analysée !", "stats": analyse}
                         })
-                        # Nova le dit aussi à l'oral
-                        parler_async(analyse, device)
+                        parler_async(reponse, device)
 
                     elif action == "dire_heure":
-                        parler_async(f"Il est {datetime.now().strftime('%H:%M')}", device)
+                        heure = datetime.now().strftime('%H:%M')
+                        reponse = f"Il est {heure} Quentin."
+                        await websocket.send_json({"type": "speech", "text": reponse})
+                        parler_async(reponse, device)
 
                     elif action == "gestion_taches":
-                        # Ton script Notion (tu peux aussi lui ajouter un websocket.send_json ensuite pour afficher le widget tâche !)
                         gerer_taches(result.get("params", {}), device)
-
                         await websocket.send_json({
                             "type": "widget_taches",
                             "data": {"titre": result.get("params", {}).get("titre", "Nouvelle tâche")}
                         })
+                        parler_async(reponse, device)
 
                     else:
-                        # Ouvre les sites, apps, macros sur tes PC via Flask
                         send_to_device(device, result)
-                        parler_async(result["reponse"], device)
+                        parler_async(reponse, device)
 
     except WebSocketDisconnect:
         print("[NOVA] Interface déconnectée.")
