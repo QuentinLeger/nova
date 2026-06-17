@@ -80,12 +80,42 @@
         };
 
         // Relance automatique intelligente si le navigateur coupe le micro après un long silence
-        recognition.onend = () => {
-            console.log("Le micro s'est coupé. Relance en cours...");
-            setTimeout(() => {
-                try { recognition.start(); } catch(e) {}
-            }, 400);
-        };
+        let isRunning = false;
+
+document.getElementById("mic-btn").addEventListener("click", () => {
+    if (!isRunning) {
+        recognition.start();
+        isRunning = true;
+        userSpeech.innerText = "Je vous écoute...";
+    }
+});
+
+recognition.onstart = () => { isRunning = true; };
+
+recognition.onend = () => {
+    isRunning = false;
+    // Relance immédiate sans délai
+    setTimeout(() => {
+        if (!isRunning) {
+            try {
+                recognition.start();
+                isRunning = true;
+            } catch(e) {
+                console.warn("Erreur relance micro :", e);
+            }
+        }
+    }, 100); // 100ms au lieu de 400ms
+};
+
+recognition.onerror = (event) => {
+    console.warn("Erreur reconnaissance :", event.error);
+    isRunning = false;
+    if (event.error !== 'aborted') {
+        setTimeout(() => {
+            try { recognition.start(); isRunning = true; } catch(e) {}
+        }, 300);
+    }
+};
 
         // EFFET MACHINE À ÉCRIRE
         function typeWriter(text, element, i = 0) {
