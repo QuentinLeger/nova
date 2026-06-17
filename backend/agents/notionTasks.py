@@ -67,46 +67,74 @@ def gerer_taches(params, device,parler):
 
         result = ajouter_tache(titre, date)
         if result.get("object") == "page":
-            parler(f"Votre tâche a été ajoutée, Quentin.", device)
+            parler("Tâche supprimée, Quentin.", device)
+            return "Tâche supprimée, Quentin."
         else:
             parler(f"Erreur lors de l'ajout, Quentin.", device)
 
+
     elif type_action in ["list", "resume"]:
+
         date_filtre = params.get("date")
+
         taches = lister_taches()
+
         liste = []
+
         for t in taches.get("results", []):
+
             try:
+
                 nom = t["properties"]["Task name"]["title"][0]["text"]["content"]
+
                 statut = t["properties"]["Status"]["status"]["name"]
+
                 if date_filtre:
+
                     due = t["properties"].get("Due date", {}).get("date")
+
                     if due and due.get("start") == date_filtre:
                         liste.append(f"{nom} ({statut})")
+
                 else:
+
                     liste.append(f"{nom} ({statut})")
+
             except:
+
                 pass
 
         texte_taches = "\n".join(liste) if liste else "Aucune tâche trouvée"
 
         response = client.chat.completions.create(
+
             model="llama-3.3-70b-versatile",
+
             messages=[ChatCompletionUserMessageParam(role="user", content=f"""
+
                 Tu es Nova, l'assistante vocale de Quentin.
+
                 Résume ces tâches à l'oral en 2-3 phrases max, en français, de façon naturelle et chaleureuse.
-                Mets en avant les tâches urgentes ou proches si il y en a.
+
                 Utilise "vous" pour t'adresser à Quentin.
+
                 N'utilise pas d'apostrophes contractées (J' → Je, etc.)
 
-                Tâches :
-                {texte_taches}
+                Tâches : {texte_taches}
+
             """)]
+
         )
-        parler(response.choices[0].message.content, device)
+
+        resume = response.choices[0].message.content
+
+        parler(resume, device)
+
+        return resume  # ← on retourne le texte
 
     elif type_action == "delete":
         supprimer_tache(params.get("id"))
-        parler("Tâche supprimée, Quentin.", device)
+        parler(f"Votre tâche a été ajoutée, Quentin.", device)
+        return "Votre tâche a été ajoutée, Quentin."
 
 ##### partie gestion de taches

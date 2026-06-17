@@ -183,13 +183,19 @@ async def websocket_endpoint(websocket: WebSocket):
                         await websocket.send_json({"type": "speech", "text": reponse})
                         parler_async(reponse, device)
 
+
+
                     elif action == "gestion_taches":
-                        gerer_taches(result.get("params", {}), device, parler_async)
-                        await websocket.send_json({
-                            "type": "widget_taches",
-                            "data": {"titre": result.get("params", {}).get("titre", "Nouvelle tâche")}
-                        })
-                        parler_async(reponse, device)
+                        texte_retour = gerer_taches(result.get("params", {}), device, parler_async)
+                        params_type = result.get("params", {}).get("type")
+                        if params_type in ["list", "resume"] and texte_retour:
+                            await websocket.send_json({"type": "speech", "text": texte_retour})
+                        else:
+                            await websocket.send_json({
+                                "type": "widget_taches",
+                                "data": {"titre": result.get("params", {}).get("titre", "Nouvelle tâche")}
+                            })
+
 
                     else:
                         send_to_device(device, result)
