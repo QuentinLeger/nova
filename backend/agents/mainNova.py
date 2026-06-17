@@ -18,7 +18,10 @@ client = Groq(api_key=api_key)
 DEVICE = "pc_fixe"
 
 app = FastAPI()
+import threading
 
+def parler_async(texte, device):
+    threading.Thread(target=parler, args=(texte, device), daemon=True).start()
 
 ### Principal prompt for NOVA
 def ask_nova(message: str):
@@ -167,7 +170,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     if action == "analyse_seance":
                         periode = result.get("params", {}).get("periode", "last")
                         # On prévient à l'oral
-                        parler("Je lance l'analyse de ta séance, ça arrive !", device)
+                        parler_async("Je lance l'analyse de ta séance, ça arrive !", device)
 
                         # Tu lances tes scripts Python de sport
                         analyse = analyser_seances(periode=periode)
@@ -179,10 +182,10 @@ async def websocket_endpoint(websocket: WebSocket):
                             "data": {"exercice": "Séance analysée !", "stats": analyse}
                         })
                         # Nova le dit aussi à l'oral
-                        parler(analyse, device)
+                        parler_async(analyse, device)
 
                     elif action == "dire_heure":
-                        parler(f"Il est {datetime.now().strftime('%H:%M')}", device)
+                        parler_async(f"Il est {datetime.now().strftime('%H:%M')}", device)
 
                     elif action == "gestion_taches":
                         # Ton script Notion (tu peux aussi lui ajouter un websocket.send_json ensuite pour afficher le widget tâche !)
@@ -196,7 +199,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     else:
                         # Ouvre les sites, apps, macros sur tes PC via Flask
                         send_to_device(device, result)
-                        parler(result["reponse"], device)
+                        parler_async(result["reponse"], device)
 
     except WebSocketDisconnect:
         print("[NOVA] Interface déconnectée.")
