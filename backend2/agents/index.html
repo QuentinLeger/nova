@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Nova</title>
+<style>
+  body {
+    background: #111;
+    color: #eee;
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+  }
+  #status {
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 20px;
+  }
+  #mic-btn {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: #333;
+    border: 2px solid #555;
+    color: #fff;
+    font-size: 30px;
+    cursor: pointer;
+  }
+  #mic-btn.listening {
+    background: #c0392b;
+    border-color: #e74c3c;
+  }
+  #transcript {
+    margin-top: 20px;
+    color: #aaa;
+    min-height: 20px;
+    font-style: italic;
+  }
+  #reponse {
+    margin-top: 30px;
+    max-width: 600px;
+    text-align: center;
+    font-size: 20px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+  <div id="status">Déconnecté</div>
+  <button id="mic-btn">🎤</button>
+  <div id="transcript"></div>
+  <div id="reponse"></div>
+
+<script>
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.lang = "fr-FR";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    const status = document.querySelector("#status");
+    const micBut = document.querySelector("#mic-btn")
+    const transcript = document.querySelector("#transcript");
+    const response = document.querySelector("#reponse");
+
+    micBut.onclick = () => {
+        console.log("Ready to receive a command");
+        recognition.start();
+
+    }
+
+    recognition.onresult = (event) => {
+        const texte = event.results[0][0].transcript;
+        response.textContent = `Resultat : ${texte}`;
+    }
+
+</script>
+
+</body>
+</html>
