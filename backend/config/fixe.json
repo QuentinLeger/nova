@@ -1,0 +1,21 @@
+{
+  "apps": {
+    "steam": "C:\\Users\\atomi\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Steam",
+    "vscode": "C:\\Users\\atomi\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe",
+    "chrome": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Google Chrome.lnk",
+    "claude": "C:\\Program Files\\WindowsApps\\Claude_1.6259.1.0_x64__pzs8sxrjxfjjc\\app\\claude.exe",
+    "deezer": "C:\\PROGRA~1\\WindowsApps\\Deezer.62021768415AF_7.1.280.0_x86__q7m17pa7q8kj0\\app\\Deezer.exe",
+    "pycharm": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\JetBrains\\PyCharm 2026.1.1.lnk",
+    "intelliJ": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\JetBrains\\IntelliJ IDEA 2025.3.2.lnk"
+  },
+  "macros": {
+    "coding": [
+      {"action": "ouvrir_app", "params": {"app": "intelliJ"}},
+      {"action": "ouvrir_app", "params": {"app": "claude"}}
+    ],
+    "vibe-coding": [
+      {"action": "ouvrir_app", "params": {"app": "deezer"}},
+      {"action": "ouvrir_app", "params": {"app": "pycharm"}}
+    ]
+  }
+}

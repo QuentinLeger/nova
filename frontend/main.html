@@ -1,199 +1,341 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Nova HUD</title>
-    <style>
-        body { background: #070b12; color: #00e5ff; font-family: 'Segoe UI', monospace; padding: 40px; }
-        .console { border-left: 3px solid #00e5ff; padding-left: 20px; margin-bottom: 30px; }
-        #user-speech { color: #88a0b0; font-style: italic; font-size: 18px; min-height: 25px; }
-        #nova-speech { color: #ffffff; font-size: 24px; font-weight: bold; text-shadow: 0 0 8px #00e5ff; min-height: 50px; margin-top: 10px; }
-        .widgets-container { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px; }
-        .widget { display: none; border: 1px solid #00e5ff; background: rgba(0, 229, 255, 0.05); box-shadow: 0 0 15px rgba(0, 229, 255, 0.2); padding: 20px; border-radius: 8px; width: 280px; animation: fadeIn 0.5s ease-out; }
-        button { background: #00e5ff; color: #070b12; border: none; padding: 12px 24px; font-weight: bold; border-radius: 4px; cursor: pointer; }
-        #mic-btn.active { background: #ff007f; color: #fff; }
-        #status { font-size: 12px; color: #88a0b0; margin-top: 8px; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    </style>
-</head>
-<body>
 
-    <button id="mic-btn">🎙️ ACTIVER NOVA</button>
-    <div id="status">WebSocket : connexion...</div>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  .hud{background:#060a10;min-height:600px;padding:20px;font-family:'Exo 2',sans-serif;border-radius:12px;position:relative;overflow:hidden;color:#c8e6f0}
+  .hud::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(0,200,255,0.03) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(0,200,255,0.03) 40px);pointer-events:none}
+  .corner{position:absolute;width:24px;height:24px;border-color:#00c8ff;border-style:solid;opacity:0.6}
+  .corner.tl{top:12px;left:12px;border-width:2px 0 0 2px}
+  .corner.tr{top:12px;right:12px;border-width:2px 2px 0 0}
+  .corner.bl{bottom:12px;left:12px;border-width:0 0 2px 2px}
+  .corner.br{bottom:12px;right:12px;border-width:0 2px 2px 0}
+  .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid rgba(0,200,255,0.15)}
+  .logo{font-family:'Share Tech Mono',monospace;font-size:22px;color:#00c8ff;letter-spacing:6px;text-transform:uppercase}
+  .status-dots{display:flex;gap:8px;align-items:center;font-size:11px;color:rgba(0,200,255,0.5);font-family:'Share Tech Mono',monospace}
+  .dot{width:6px;height:6px;border-radius:50%;background:#00c8ff;animation:pulse 2s infinite}
+  .dot.off{background:rgba(0,200,255,0.2);animation:none}
+  .main-grid{display:grid;grid-template-columns:1fr 240px;gap:16px}
+  .center-col{display:flex;flex-direction:column;gap:16px;align-items:center}
+  .right-col{display:flex;flex-direction:column;gap:12px}
 
-    <div class="console">
-        <div id="user-speech">En attente...</div>
-        <div id="nova-speech">Bonjour Quentin. Cliquez sur le bouton pour m'activer.</div>
+  /* ORBE */
+  .orb-container{position:relative;width:200px;height:200px;display:flex;align-items:center;justify-content:center}
+  .orb-ring{position:absolute;border-radius:50%;border:1px solid rgba(0,200,255,0.2);animation:spin linear infinite}
+  .r1{width:200px;height:200px;border-top-color:rgba(0,200,255,0.6);animation-duration:6s}
+  .r2{width:170px;height:170px;border-right-color:rgba(0,200,255,0.4);animation-duration:4s;animation-direction:reverse}
+  .r3{width:140px;height:140px;border-bottom-color:rgba(0,200,255,0.3);animation-duration:9s}
+  .orb-core{width:110px;height:110px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#0af4ff 0%,#007aff 40%,#001e3c 100%);position:relative;z-index:2;box-shadow:0 0 30px rgba(0,200,255,0.35),inset 0 0 20px rgba(0,0,50,0.5)}
+  .orb-waves{position:absolute;border-radius:50%;border:1px solid rgba(0,200,255,0.15);animation:wave 3s ease-out infinite;z-index:1}
+  .w1{width:110px;height:110px;animation-delay:0s}
+  .w2{width:110px;height:110px;animation-delay:1s}
+  .w3{width:110px;height:110px;animation-delay:2s}
+  .orb-core.speaking .inner-glow{animation:glow-pulse 0.3s ease-in-out infinite alternate}
+  .orb-label{font-family:'Share Tech Mono',monospace;font-size:10px;color:rgba(0,200,255,0.5);letter-spacing:3px;text-transform:uppercase;margin-top:8px}
+
+  /* BARRE VOCALE */
+  .voice-bar{width:100%;max-width:340px;padding:14px 20px;border:1px solid rgba(0,200,255,0.2);border-radius:6px;background:rgba(0,200,255,0.03)}
+  .user-line{font-size:12px;color:rgba(0,200,255,0.45);font-family:'Share Tech Mono',monospace;min-height:16px;margin-bottom:8px}
+  .nova-line{font-size:15px;color:#e0f4ff;font-weight:300;min-height:44px;line-height:1.5}
+  .bars{display:flex;gap:3px;align-items:flex-end;height:28px;margin-top:10px}
+  .bar-eq{width:4px;border-radius:2px;background:#00c8ff;opacity:0.5;animation:eq 0.6s ease-in-out infinite alternate}
+  .bar-eq:nth-child(2){animation-delay:0.1s;height:12px}
+  .bar-eq:nth-child(3){animation-delay:0.2s;height:20px}
+  .bar-eq:nth-child(4){animation-delay:0.05s;height:8px}
+  .bar-eq:nth-child(5){animation-delay:0.15s;height:16px}
+  .bar-eq:nth-child(6){animation-delay:0.25s;height:22px}
+  .bar-eq:nth-child(7){animation-delay:0.08s;height:10px}
+  .bar-eq:nth-child(8){animation-delay:0.18s;height:18px}
+  .bar-eq:nth-child(9){animation-delay:0.3s;height:14px}
+  .bar-eq:nth-child(10){animation-delay:0.12s;height:24px}
+  .bar-eq:nth-child(11){animation-delay:0.22s;height:8px}
+  .bar-eq:nth-child(12){animation-delay:0.06s;height:20px}
+  .bars.idle .bar-eq{animation:none;height:3px;opacity:0.2}
+
+  /* BOUTON */
+  .mic-btn{padding:10px 28px;font-family:'Exo 2',sans-serif;font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;border:1px solid #00c8ff;background:transparent;color:#00c8ff;border-radius:4px;cursor:pointer;transition:all 0.2s}
+  .mic-btn:hover{background:rgba(0,200,255,0.1)}
+  .mic-btn.active{background:rgba(255,0,80,0.1);border-color:#ff0050;color:#ff0050}
+
+  /* WIDGETS DROITE */
+  .panel{border:1px solid rgba(0,200,255,0.15);border-radius:6px;background:rgba(0,200,255,0.02);padding:14px;position:relative;overflow:hidden}
+  .panel::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,200,255,0.4),transparent)}
+  .panel-title{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(0,200,255,0.5);margin-bottom:10px}
+  .metric{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(0,200,255,0.07)}
+  .metric:last-child{border-bottom:none}
+  .metric-label{font-size:12px;color:rgba(0,200,255,0.4);font-family:'Share Tech Mono',monospace}
+  .metric-val{font-size:14px;color:#a0e4f0;font-weight:600;font-family:'Share Tech Mono',monospace}
+  .metric-val.green{color:#00ff9d}
+  .metric-val.amber{color:#ffc040}
+
+  .task-item{padding:6px 0;border-bottom:1px solid rgba(0,200,255,0.06);display:flex;align-items:center;gap:8px}
+  .task-item:last-child{border-bottom:none}
+  .task-dot{width:5px;height:5px;border-radius:50%;background:rgba(0,200,255,0.4);flex-shrink:0}
+  .task-dot.done{background:#00ff9d}
+  .task-text{font-size:12px;color:rgba(180,220,240,0.7)}
+  .task-text.done{text-decoration:line-through;color:rgba(0,200,255,0.3)}
+
+  .sys-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0}
+  .sys-label{font-size:11px;color:rgba(0,200,255,0.4);font-family:'Share Tech Mono',monospace}
+  .sys-bar-wrap{width:90px;height:4px;background:rgba(0,200,255,0.1);border-radius:2px;overflow:hidden}
+  .sys-bar-fill{height:100%;border-radius:2px;background:#00c8ff}
+  .sys-pct{font-size:11px;color:#00c8ff;font-family:'Share Tech Mono',monospace;min-width:30px;text-align:right}
+
+  .time-block{text-align:center;padding:8px 0}
+  .time-big{font-family:'Share Tech Mono',monospace;font-size:26px;color:#00c8ff;letter-spacing:3px}
+  .date-small{font-size:11px;color:rgba(0,200,255,0.4);font-family:'Share Tech Mono',monospace;letter-spacing:2px;margin-top:4px}
+
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes wave{0%{transform:scale(1);opacity:0.4}100%{transform:scale(2.2);opacity:0}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+  @keyframes eq{from{transform:scaleY(0.3)}to{transform:scaleY(1)}}
+  @keyframes glow-pulse{from{box-shadow:0 0 20px rgba(0,200,255,0.3)}to{box-shadow:0 0 50px rgba(0,200,255,0.8)}}
+  @keyframes tw{from{opacity:0}to{opacity:1}}
+</style>
+
+<div class="hud" id="hud">
+  <div class="corner tl"></div><div class="corner tr"></div>
+  <div class="corner bl"></div><div class="corner br"></div>
+
+  <div class="top-bar">
+    <div class="logo">NOVA</div>
+    <div class="status-dots">
+      <div class="dot" id="ws-dot"></div>
+      <span id="ws-label">OFFLINE</span>
+      &nbsp;·&nbsp;
+      <span id="clock-mini"></span>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <div class="center-col">
+      <div class="orb-container">
+        <div class="orb-ring r1"></div>
+        <div class="orb-ring r2"></div>
+        <div class="orb-ring r3"></div>
+        <div class="orb-waves w1"></div>
+        <div class="orb-waves w2"></div>
+        <div class="orb-waves w3"></div>
+        <div class="orb-core" id="orb"></div>
+      </div>
+      <div class="orb-label" id="orb-state">EN VEILLE</div>
+
+      <div class="voice-bar">
+        <div class="user-line" id="user-speech">En attente...</div>
+        <div class="nova-line" id="nova-speech">Bonjour Quentin. Cliquez sur Activer.</div>
+        <div class="bars idle" id="eq-bars">
+          <div class="bar-eq" style="height:6px"></div>
+          <div class="bar-eq" style="height:12px"></div>
+          <div class="bar-eq" style="height:20px"></div>
+          <div class="bar-eq" style="height:8px"></div>
+          <div class="bar-eq" style="height:16px"></div>
+          <div class="bar-eq" style="height:22px"></div>
+          <div class="bar-eq" style="height:10px"></div>
+          <div class="bar-eq" style="height:18px"></div>
+          <div class="bar-eq" style="height:14px"></div>
+          <div class="bar-eq" style="height:24px"></div>
+          <div class="bar-eq" style="height:8px"></div>
+          <div class="bar-eq" style="height:20px"></div>
+        </div>
+      </div>
+
+      <button class="mic-btn" id="mic-btn">&#9679; ACTIVER NOVA</button>
     </div>
 
-    <div class="widgets-container">
-        <div id="widget-sport" class="widget">
-            <h3 style="margin-top:0; color:#00e5ff;">🏋️ SÉANCE DE SPORT</h3>
-            <p id="sport-ex"></p>
-            <p id="sport-status" style="font-size: 12px; color: #88a0b0;"></p>
+    <div class="right-col">
+      <div class="panel">
+        <div class="time-block">
+          <div class="time-big" id="clock">--:--:--</div>
+          <div class="date-small" id="date-str">---</div>
         </div>
-        <div id="widget-taches" class="widget">
-            <h3 style="margin-top:0; color:#ff007f;">📝 NOTION TASK</h3>
-            <p id="tache-titre"></p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Système</div>
+        <div class="sys-row">
+          <span class="sys-label">WS</span>
+          <div class="sys-bar-wrap"><div class="sys-bar-fill" id="bar-ws" style="width:0%;background:#ff0050"></div></div>
+          <span class="sys-pct" id="pct-ws">OFF</span>
         </div>
+        <div class="sys-row">
+          <span class="sys-label">MIC</span>
+          <div class="sys-bar-wrap"><div class="sys-bar-fill" id="bar-mic" style="width:0%"></div></div>
+          <span class="sys-pct" id="pct-mic">OFF</span>
+        </div>
+        <div class="sys-row">
+          <span class="sys-label">IA</span>
+          <div class="sys-bar-wrap"><div class="sys-bar-fill" id="bar-ai" style="width:62%;background:#00ff9d"></div></div>
+          <span class="sys-pct" id="pct-ai">62%</span>
+        </div>
+      </div>
+
+      <div class="panel" id="widget-sport" style="display:none">
+        <div class="panel-title">Séance sport</div>
+        <div class="metric">
+          <span class="metric-label">Exercice</span>
+          <span class="metric-val" id="sport-ex">—</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Stats</span>
+          <span class="metric-val green" id="sport-status">—</span>
+        </div>
+      </div>
+
+      <div class="panel" id="widget-taches" style="display:none">
+        <div class="panel-title">Notion · Tâches</div>
+        <div id="taches-list"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Activité récente</div>
+        <div class="task-item"><div class="task-dot done"></div><div class="task-text done">Brief matinal</div></div>
+        <div class="task-item"><div class="task-dot done"></div><div class="task-text done">Revue agenda</div></div>
+        <div class="task-item"><div class="task-dot"></div><div class="task-text">Réunion 15h00</div></div>
+        <div class="task-item"><div class="task-dot"></div><div class="task-text">Rapport hebdo</div></div>
+      </div>
     </div>
+  </div>
+</div>
 
-    <script>
-        // ─── ÉLÉMENTS DOM ────────────────────────────────────────────────
-        const userSpeech  = document.getElementById("user-speech");
-        const novaSpeech  = document.getElementById("nova-speech");
-        const micBtn      = document.getElementById("mic-btn");
-        const statusEl    = document.getElementById("status");
+<script>
+const userSpeechEl = document.getElementById('user-speech');
+const novaSpeechEl = document.getElementById('nova-speech');
+const micBtn       = document.getElementById('mic-btn');
+const orbEl        = document.getElementById('orb');
+const orbState     = document.getElementById('orb-state');
+const eqBars       = document.getElementById('eq-bars');
+const wsDot        = document.getElementById('ws-dot');
+const wsLabel      = document.getElementById('ws-label');
 
-        // ─── WEBSOCKET ───────────────────────────────────────────────────
-        let ws;
+function updateClock(){
+  const n=new Date();
+  const h=String(n.getHours()).padStart(2,'0');
+  const m=String(n.getMinutes()).padStart(2,'0');
+  const s=String(n.getSeconds()).padStart(2,'0');
+  document.getElementById('clock').textContent=h+':'+m+':'+s;
+  document.getElementById('clock-mini').textContent=h+':'+m;
+  const days=['DIM','LUN','MAR','MER','JEU','VEN','SAM'];
+  const months=['JAN','FÉV','MAR','AVR','MAI','JUN','JUL','AOÛ','SEP','OCT','NOV','DÉC'];
+  document.getElementById('date-str').textContent=days[n.getDay()]+' '+n.getDate()+' '+months[n.getMonth()]+' '+n.getFullYear();
+}
+setInterval(updateClock,1000);updateClock();
 
-        function connectWS() {
-            ws = new WebSocket("ws://localhost:8000/ws");
+function setOrbState(state){
+  if(state==='listening'){
+    orbState.textContent='EN ÉCOUTE';
+    eqBars.classList.remove('idle');
+    orbEl.style.boxShadow='0 0 40px rgba(0,200,255,0.5),inset 0 0 20px rgba(0,0,50,0.5)';
+    document.getElementById('bar-mic').style.width='100%';
+    document.getElementById('pct-mic').textContent='ON';
+  } else if(state==='speaking'){
+    orbState.textContent='TRAITEMENT';
+    eqBars.classList.remove('idle');
+    orbEl.style.boxShadow='0 0 60px rgba(0,150,255,0.7),inset 0 0 20px rgba(0,0,50,0.5)';
+  } else {
+    orbState.textContent='EN VEILLE';
+    eqBars.classList.add('idle');
+    orbEl.style.boxShadow='0 0 30px rgba(0,200,255,0.35),inset 0 0 20px rgba(0,0,50,0.5)';
+    document.getElementById('bar-mic').style.width='0%';
+    document.getElementById('pct-mic').textContent='OFF';
+  }
+}
 
-            ws.onopen = () => {
-                statusEl.innerText = "WebSocket : connecté ✅";
-                console.log("[WS] Connecté au serveur Python");
-            };
+let ws,twTimeout=null;
 
-            ws.onclose = () => {
-                statusEl.innerText = "WebSocket : déconnecté ❌ — reconnexion dans 3s...";
-                console.warn("[WS] Connexion fermée. Tentative de reconnexion...");
-                setTimeout(connectWS, 3000);
-            };
+function connectWS(){
+  ws=new WebSocket('ws://localhost:8000/ws');
+  ws.onopen=()=>{
+    wsDot.style.background='#00ff9d';
+    wsDot.style.animationDuration='1s';
+    wsLabel.textContent='ONLINE';
+    document.getElementById('bar-ws').style.width='100%';
+    document.getElementById('bar-ws').style.background='#00ff9d';
+    document.getElementById('pct-ws').textContent='ON';
+  };
+  ws.onclose=()=>{
+    wsDot.style.background='rgba(0,200,255,0.2)';
+    wsLabel.textContent='OFFLINE';
+    document.getElementById('bar-ws').style.width='0%';
+    document.getElementById('bar-ws').style.background='#ff0050';
+    document.getElementById('pct-ws').textContent='OFF';
+    setTimeout(connectWS,3000);
+  };
+  ws.onerror=()=>{};
+  ws.onmessage=(e)=>{
+    const msg=JSON.parse(e.data);
+    if(msg.type==='speech'){typeWriter(msg.text,novaSpeechEl);}
+    else if(msg.type==='widget_sport'){
+      document.getElementById('sport-ex').textContent=msg.data.exercice;
+      document.getElementById('sport-status').textContent=msg.data.stats;
+      document.getElementById('widget-sport').style.display='block';
+    }
+    else if(msg.type==='widget_taches'){
+      const list=document.getElementById('taches-list');
+      list.innerHTML='';
+      const titre=msg.data.titre||'Tâche';
+      list.innerHTML='<div class="task-item"><div class="task-dot"></div><div class="task-text">'+titre+'</div></div>';
+      document.getElementById('widget-taches').style.display='block';
+    }
+  };
+}
+connectWS();
 
-            ws.onerror = (e) => {
-                statusEl.innerText = "WebSocket : erreur de connexion ❌";
-                console.error("[WS] Erreur :", e);
-            };
+function envoyerCommande(texte){
+  if(!ws||ws.readyState!==WebSocket.OPEN)return;
+  ws.send(JSON.stringify({user_message:texte}));
+  setOrbState('speaking');
+}
 
-            ws.onmessage = (event) => {
-                const msg = JSON.parse(event.data);
-                console.log("[WS] Message reçu :", msg);
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let recognition,micActif=false,dejaEnvoye=false;
+if(SR){
+  recognition=new SR();
+  recognition.lang='fr-FR';
+  recognition.interimResults=true;
+  recognition.continuous=true;
+  recognition.onstart=()=>{micActif=true;micBtn.classList.add('active');micBtn.textContent='⏹ DÉSACTIVER';setOrbState('listening');};
+  recognition.onresult=(event)=>{
+    let tf='',ti='';
+    for(let i=event.resultIndex;i<event.results.length;i++){
+      if(event.results[i].isFinal)tf+=event.results[i][0].transcript;
+      else ti+=event.results[i][0].transcript;
+    }
+    const aff=tf||ti;
+    userSpeechEl.textContent='Quentin : '+aff;
+    if(tf&&tf.toLowerCase().includes('nova')&&!dejaEnvoye){
+      dejaEnvoye=true;
+      envoyerCommande(tf);
+      setTimeout(()=>{dejaEnvoye=false;},1500);
+    }
+  };
+  recognition.onend=()=>{
+    if(micActif){setTimeout(()=>{try{recognition.start();}catch(e){}},150);}
+  };
+  recognition.onerror=(e)=>{
+    if(e.error==='not-allowed'){
+      userSpeechEl.textContent='⚠ Accès micro refusé';
+      micActif=false;micBtn.classList.remove('active');micBtn.textContent='● ACTIVER NOVA';setOrbState('idle');
+    }
+  };
+}
 
-                if (msg.type === "speech") {
-                    typeWriter(msg.text, novaSpeech);
-                }
-                else if (msg.type === "widget_sport") {
-                    document.getElementById("sport-ex").innerText     = msg.data.exercice;
-                    document.getElementById("sport-status").innerText = msg.data.stats;
-                    document.getElementById("widget-sport").style.display = "block";
-                }
-                else if (msg.type === "widget_taches") {
-                    document.getElementById("tache-titre").innerText = msg.data.titre;
-                    document.getElementById("widget-taches").style.display = "block";
-                }
-            };
-        }
+micBtn.addEventListener('click',()=>{
+  if(!recognition)return;
+  if(!micActif){recognition.start();}
+  else{
+    recognition.stop();micActif=false;
+    micBtn.classList.remove('active');micBtn.textContent='● ACTIVER NOVA';
+    userSpeechEl.textContent='Micro désactivé.';
+    setOrbState('idle');
+  }
+});
 
-        connectWS();
-
-        // ─── ENVOI AU SERVEUR ────────────────────────────────────────────
-        function envoyerCommande(texte) {
-            if (!ws || ws.readyState !== WebSocket.OPEN) {
-                console.warn("[WS] Pas connecté, impossible d'envoyer.");
-                statusEl.innerText = "WebSocket : non connecté ❌";
-                return;
-            }
-            const payload = JSON.stringify({ user_message: texte });
-            console.log("[WS] Envoi →", payload);
-            ws.send(payload);
-        }
-
-        // ─── RECONNAISSANCE VOCALE ───────────────────────────────────────
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'fr-FR';
-        recognition.interimResults = true;
-        recognition.continuous = true;
-
-        let micActif = false;
-        let dejaEnvoye = false; // empêche le double envoi pendant qu'une phrase est en cours
-
-        micBtn.addEventListener("click", () => {
-            if (!micActif) {
-                recognition.start();
-                // Le flag micActif est mis à true dans onstart
-            } else {
-                recognition.stop();
-                micActif = false;
-                micBtn.classList.remove("active");
-                micBtn.innerText = "🎙️ ACTIVER NOVA";
-                userSpeech.innerText = "Micro désactivé.";
-            }
-        });
-
-        recognition.onstart = () => {
-            micActif = true;
-            micBtn.classList.add("active");
-            micBtn.innerText = "🔴 EN ÉCOUTE...";
-            userSpeech.innerText = "Je vous écoute...";
-            console.log("[MIC] Démarré");
-        };
-
-        recognition.onresult = (event) => {
-            let texteInterim = '';
-            let texteFinal   = '';
-
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                if (event.results[i].isFinal) {
-                    texteFinal += event.results[i][0].transcript;
-                } else {
-                    texteInterim += event.results[i][0].transcript;
-                }
-            }
-
-            const texteAffiche = texteFinal || texteInterim;
-            userSpeech.innerText = "Quentin : " + texteAffiche;
-
-            // On envoie SEULEMENT quand la phrase est finale ET contient "nova"
-            if (texteFinal && texteFinal.toLowerCase().includes("nova") && !dejaEnvoye) {
-                dejaEnvoye = true;
-                console.log("[MIC] Commande finale détectée :", texteFinal);
-                envoyerCommande(texteFinal);
-                // Réinitialisation après un court délai pour éviter le double envoi
-                setTimeout(() => { dejaEnvoye = false; }, 1500);
-            }
-        };
-
-        recognition.onend = () => {
-            console.log("[MIC] Fin de session");
-            // Relance auto seulement si le micro était actif (pas si on l'a stoppé manuellement)
-            if (micActif) {
-                setTimeout(() => {
-                    try { recognition.start(); } catch(e) { console.warn("[MIC] Erreur relance :", e); }
-                }, 150);
-            }
-        };
-
-        recognition.onerror = (event) => {
-            console.warn("[MIC] Erreur :", event.error);
-            // 'no-speech' est normal (silence trop long), on relance sans paniquer
-            if (event.error === 'no-speech' || event.error === 'audio-capture') {
-                // onend va s'en charger
-                return;
-            }
-            if (event.error === 'not-allowed') {
-                userSpeech.innerText = "⚠️ Accès au micro refusé par le navigateur.";
-                micActif = false;
-                micBtn.classList.remove("active");
-                micBtn.innerText = "🎙️ ACTIVER NOVA";
-            }
-        };
-
-        let typeWriterTimeout = null;
-
-        function typeWriter(text, element, i = 0) {
-            if (i === 0) {
-                // Annule l'animation en cours si il y en a une
-                if (typeWriterTimeout) clearTimeout(typeWriterTimeout);
-                element.innerHTML = "";
-            }
-            if (i < text.length) {
-                element.innerHTML += text.charAt(i);
-                typeWriterTimeout = setTimeout(() => typeWriter(text, element, i + 1), 30);
-            }
-        }
-    </script>
-</body>
-</html>
+function typeWriter(text,el,i=0){
+  if(i===0){if(twTimeout)clearTimeout(twTimeout);el.textContent='';setOrbState('speaking');}
+  if(i<text.length){
+    el.textContent+=text.charAt(i);
+    twTimeout=setTimeout(()=>typeWriter(text,el,i+1),28);
+  } else {
+    if(micActif)setOrbState('listening');else setOrbState('idle');
+  }
+}
+</script>

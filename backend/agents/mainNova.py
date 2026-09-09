@@ -17,6 +17,7 @@ api_key = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 DEVICE = "pc_fixe"
 
+
 app = FastAPI()
 import threading
 
@@ -45,6 +46,9 @@ def ask_nova(message: str):
     - analyse_seance
     - recherche_web
     - gestion_taches
+    - controle_domotique
+    
+    les mots compliqué sont : intelliJi tu entend intelligent a la place..
 
     Pour analyse_seance : si je dis "ma séance" = today, "dernière séance" = last, "cette semaine" = week
 
@@ -76,6 +80,10 @@ def ask_nova(message: str):
     "supprime la tâche X" → {{"action": "gestion_taches", "params": {{"type": "delete", "id": "..."}} }}
     
     "qu’est-ce qu’il me reste à faire ?" → {{"action": "gestion_taches", "params": {{"type": "resume"}} }}
+    
+    pour la gestion de domotique → "allume la lumière" → {{"action": "controle_domotique", "params": {{"appareil": "lumiere", "etat": "on"}}, "reponse": "Je m'en occupe, j'allume la lumière Quentin."}}
+    "éteins la prise" → {{"action": "controle_domotique", "params": {{"appareil": "prise", "etat": "off"}}, "reponse": "Bien sûr, je coupe la prise Quentin."}}
+    "liste mes appareils connected" → {{"action": "controle_domotique", "params": {{"appareil": "tous", "etat": "liste"}}, "reponse": "Je récupère la liste de vos appareils."}}
 
     Macros disponibles : coding, vibe-coding, stream
     Toujours mettre une URL complète avec https://
@@ -133,6 +141,12 @@ def ask_nova(message: str):
 def send_to_device(device, payload):
     DEVICE_IPS = {"pc_fixe": "192.168.1.18:5001", "pc_portable": "10.13.33.131:5001"}
     url = f"http://{DEVICE_IPS.get(device, DEVICE)}/execute"
+
+    if payload.get("action") == "controle_domotique":
+        if "params" not in payload:
+            payload["params"] = {}
+        payload["params"]["alexa_key"] = os.getenv("ALEXA_KEY")
+
     try:
         requests.post(url, json=payload, timeout=5)
     except Exception as e:
