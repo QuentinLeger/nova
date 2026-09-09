@@ -2,22 +2,21 @@ from flask import Flask, request
 import subprocess
 import webbrowser
 import json
-import requests
 import asyncio
 import edge_tts
 import pygame
-import os
 from datetime import datetime
 from dotenv import load_dotenv
+
 
 load_dotenv()
 app = Flask(__name__)
 
-with open("portable.json") as f:
+with open("../config/portable.json") as f:
     CONFIG = json.load(f)
 
 async def generer_voix(texte):
-    communicate = edge_tts.Communicate(texte, voice="fr-FR-DeniseNeural", rate="-10%", pitch="-5Hz")
+    communicate = edge_tts.Communicate(texte, voice="fr-FR-VivienneMultilingualNeural", rate="+2%", pitch="-5Hz")
     await communicate.save("output.mp3")
 
 
@@ -37,6 +36,8 @@ def speak():
 
     return {"status": "ok"}
 
+
+
 @app.post("/save_file")
 def save_file():
     nom = request.json["nom"]
@@ -44,6 +45,7 @@ def save_file():
     chemin = f"C:/Users/atomi/OneDrive/Bureau/{nom}"
     with open(chemin, "w", encoding="utf-8") as f:
         f.write(contenu)
+
     print(f"Fichier sauvegardé : {chemin}")
     return {"status": "ok"}
 
@@ -78,9 +80,26 @@ def executer_action(data):
         else:
             print(f"Macro inconnue : {nom}")
 
+    elif action == "recherche_web":
+        params = data["params"]
+        type_rech = params.get("type")
+        query = params.get("query", "").replace(" ", "+")
+
+        if type_rech == "youtube":
+            url = f"https://www.youtube.com/results?search_query={query}"
+        elif type_rech == "google":
+            url = f"https://www.google.com/search?q={query}"
+        else:
+            print("Type de recherche inconnu")
+            return
+
+        chrome.open(url)
+        print(f"Recherche lancée : {url}")
+
 @app.post("/execute")
 def execute():
     executer_action(request.json)
     return {"status": "ok"}
 
 app.run(host="0.0.0.0", port=5001)
+

@@ -3,13 +3,14 @@ import pandas as pd
 from datetime import datetime, timedelta
 from groq import Groq
 from dotenv import load_dotenv
+import requests
 
 load_dotenv()
 api_key = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
 def analyser_seances(periode="today"):
-    df = pd.read_csv("workouts.csv")
+    df = pd.read_csv("../../workouts.csv")
     df['start_time'] = pd.to_datetime(df['start_time'], format="%b %d, %Y, %I:%M %p")
 
     aujourd_hui = datetime.now().date()
@@ -94,12 +95,16 @@ Génère un programme pour ma prochaine séance en JSON valide :
 
     programme = response.choices[0].message.content
 
-    with open("prochaine_seance.json", "w") as f:
-        f.write(programme)
+    try:
+        requests.post("http://192.168.1.18:5001/save_file", json={
+            "nom": "prochaine_seance.json",
+            "contenu": programme
+        }, timeout=5)
+        print("Programme envoyé sur le PC fixe !")
+    except:
+        print("PC fixe injoignable, sauvegarde locale")
+        with open("prochaine_seance.json", "w") as f:
+            f.write(programme)
 
     print("Programme sauvegardé dans prochaine_seance.json")
     return programme
-
-analyse = analyser_seances(periode="last")
-print(analyse)
-generer_prochaine_seance(analyse)
