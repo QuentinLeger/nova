@@ -56,6 +56,8 @@
   <div id="transcript"></div>
   <div id="reponse"></div>
 
+  <div id="connecteWs">Deco</div>
+
 <script>
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
@@ -64,10 +66,18 @@
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
+    const ws = new WebSocket("ws://localhost:8000/ws");
+
     const status = document.querySelector("#status");
     const micBut = document.querySelector("#mic-btn")
     const transcript = document.querySelector("#transcript");
     const response = document.querySelector("#reponse");
+    const wsConnected = document.querySelector("#connecteWs")
+
+    ws.onopen = () => {
+      console.log("marche");
+      wsConnected.textContent = `Connecté`;
+    }
 
     micBut.onclick = () => {
         console.log("Ready to receive a command");
@@ -76,9 +86,15 @@
     }
 
     recognition.onresult = (event) => {
+      console.log("texte entendu")
         const texte = event.results[0][0].transcript;
         response.textContent = `Resultat : ${texte}`;
+        if (ws.readyState === WebSocket.OPEN){
+          ws.send(JSON.stringify({ user_message: texte }));
+        }
     }
+
+
 
 </script>
 
