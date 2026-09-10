@@ -30,20 +30,20 @@ async def generer_voix(texte):
 
 
 
-def speak(texte):
-
+def jouer_audio():
     pygame.mixer.init()
-    pygame.mixer.music.unload()  # libère le fichier
-
-    asyncio.run(generer_voix(texte))
-
+    pygame.mixer.music.unload()
     pygame.mixer.music.load("output.mp3")
     pygame.mixer.music.play()
     while pygame.mixer.music.get_busy():
         pygame.time.Clock().tick(10)
+    pygame.mixer.music.unload()
+    pygame.mixer.quit()
 
-    return {"status": "ok"}
 
+async def speak_async(texte):
+    await generer_voix(texte)
+    jouer_audio()
 
 
 

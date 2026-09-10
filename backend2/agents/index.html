@@ -55,7 +55,8 @@
   <button id="mic-btn">🎤</button>
   <div id="transcript"></div>
   <div id="reponse"></div>
-
+  <textarea id="texteRep" ></textarea>
+  <button id="submitRep">Submit</button>
   <div id="connecteWs">Deco</div>
 
 <script>
@@ -73,27 +74,66 @@
     const transcript = document.querySelector("#transcript");
     const response = document.querySelector("#reponse");
     const wsConnected = document.querySelector("#connecteWs")
+    const texteA = document.querySelector("#texteRep")
+    const subBtn = document.querySelector("#submitRep")
 
     ws.onopen = () => {
       console.log("marche");
       wsConnected.textContent = `Connecté`;
     }
 
+    recognition.onstart = () => {
+      console.log("L'écoute a VRAIMENT démarré");
+    }
+
+
     micBut.onclick = () => {
-        console.log("Ready to receive a command");
-        recognition.start();
+        try {
+          recognition.start();
+          console.log("En attente d'une commande")
+
+          timeoutId = setTimeout (() => {
+            console.log("Timeout : arrêt forcé de l'écoute");
+            recognition.stop();
+        }, 6000);
+        } catch (e){
+          console.log("Erreure : ",e);
+        }
 
     }
+
+    subBtn.onclick = () => {
+      console.log(texteA.value)
+      if (ws.readyState === WebSocket.OPEN){
+          ws.send(JSON.stringify({ user_message: texteA.value }));
+        }
+    }
+
 
     recognition.onresult = (event) => {
       console.log("texte entendu")
         const texte = event.results[0][0].transcript;
-        response.textContent = `Resultat : ${texte}`;
         if (ws.readyState === WebSocket.OPEN){
           ws.send(JSON.stringify({ user_message: texte }));
         }
+        response.textContent = `Resultat : ${texte}`;
     }
 
+    recognition.onerror = (event) => {
+      console.log("ERREUR MICRO :", event.error);
+    }
+
+    recognition.onend = () => {
+      console.log("Écoute terminée");
+      clearTimeout(timeoutId);
+    }
+
+    ws.onmessage = (event) => {
+        console.log("coucou");
+        const data = JSON.parse(event.data); // event.data = la string JSON reçue
+        console.log(data.text); // "Message reçu !"
+        transcript.textContent = data.text;
+    }
 
 
 </script>
