@@ -2,62 +2,224 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Nova</title>
 <style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
   body {
-    background: #111;
-    color: #eee;
-    font-family: sans-serif;
+    background: radial-gradient(circle at top, #1e2430 0%, #0d1117 100%);
+    color: #e6edf3;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  /* Conteneur principal façon carte glassmorphism */
+  .container {
+    background: rgba(22, 27, 34, 0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 36px 32px;
+    width: 100%;
+    max-width: 520px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    height: 100vh;
-    margin: 0;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
   }
-  #status {
-    font-size: 14px;
-    color: #888;
-    margin-bottom: 20px;
+
+  /* Barre d'état haute (statuts & IP) */
+  .top-bar {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
   }
-  #mic-btn {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    background: #333;
-    border: 2px solid #555;
-    color: #fff;
-    font-size: 30px;
+
+  .status-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  #status, #connecteWs {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #8b949e;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.2s ease;
+  }
+
+  #addressIp {
+    background: rgba(255, 255, 255, 0.06);
+    color: #c9d1d9;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 6px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    outline: none;
     cursor: pointer;
+    transition: border-color 0.2s ease;
   }
+
+  #addressIp:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+
+  #addressIp option {
+    background: #161b22;
+    color: #e6edf3;
+  }
+
+  /* Bouton micro avec effet de halo */
+  #mic-btn {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #238636, #1f6feb);
+    border: none;
+    color: #ffffff;
+    font-size: 34px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 25px rgba(31, 111, 235, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    margin-bottom: 8px;
+  }
+
+  #mic-btn:hover {
+    transform: scale(1.05);
+    filter: brightness(1.1);
+    box-shadow: 0 12px 30px rgba(31, 111, 235, 0.5);
+  }
+
+  #mic-btn:active {
+    transform: scale(0.96);
+  }
+
   #mic-btn.listening {
-    background: #c0392b;
-    border-color: #e74c3c;
+    background: linear-gradient(145deg, #da3633, #f85149);
+    box-shadow: 0 0 30px rgba(248, 81, 73, 0.6);
+    animation: pulse 1.6s infinite;
   }
+
+  @keyframes pulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.6); }
+    70% { transform: scale(1.04); box-shadow: 0 0 0 18px rgba(248, 81, 73, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(248, 81, 73, 0); }
+  }
+
+  /* Retours textuels */
   #transcript {
-    margin-top: 20px;
-    color: #aaa;
-    min-height: 20px;
+    min-height: 24px;
+    font-size: 14px;
+    color: #8b949e;
     font-style: italic;
-  }
-  #reponse {
-    margin-top: 30px;
-    max-width: 600px;
     text-align: center;
-    font-size: 20px;
-    line-height: 1.5;
+    margin-top: 14px;
+  }
+
+  #reponse {
+    margin-top: 12px;
+    margin-bottom: 24px;
+    font-size: 16px;
+    font-weight: 500;
+    color: #58a6ff;
+    text-align: center;
+    min-height: 24px;
+    line-height: 1.4;
+  }
+
+  /* Zone de saisie manuelle */
+  .input-group {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  #texteRep {
+    width: 100%;
+    height: 72px;
+    background: rgba(13, 17, 23, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px 14px;
+    color: #e6edf3;
+    font-size: 14px;
+    font-family: inherit;
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  #texteRep:focus {
+    border-color: #58a6ff;
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+  }
+
+  #submitRep {
+    width: 100%;
+    padding: 12px;
+    background: #238636;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+  }
+
+  #submitRep:hover {
+    background: #2ea043;
+  }
+
+  #submitRep:active {
+    transform: scale(0.99);
   }
 </style>
 </head>
 <body>
 
-  <div id="status">Déconnecté</div>
-  <button id="mic-btn">🎤</button>
-  <div id="transcript"></div>
-  <div id="reponse"></div>
-  <textarea id="texteRep" ></textarea>
-  <button id="submitRep">Submit</button>
-  <div id="connecteWs">Deco</div>
+  <div class="container">
+    <div class="top-bar">
+      <div class="status-group">
+        <div id="status">Déconnecté</div>
+        <div id="connecteWs">Deco</div>
+      </div>
+      <select id="addressIp">
+        <option value="192.168.1.18">Pc Fixe</option>
+        <option value="localhost">Pc utilisé</option>
+      </select>
+    </div>
+
+    <button id="mic-btn">🎤</button>
+
+    <div id="transcript"></div>
+    <div id="reponse"></div>
+
+    <div class="input-group">
+      <textarea id="texteRep" placeholder="Écrire un message alternatif..."></textarea>
+      <button id="submitRep">Envoyer</button>
+    </div>
+  </div>
 
 <script>
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -67,75 +229,96 @@
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
-    const ws = new WebSocket("ws://localhost:8000/ws");
-
     const status = document.querySelector("#status");
-    const micBut = document.querySelector("#mic-btn")
+    const micBut = document.querySelector("#mic-btn");
     const transcript = document.querySelector("#transcript");
     const response = document.querySelector("#reponse");
-    const wsConnected = document.querySelector("#connecteWs")
-    const texteA = document.querySelector("#texteRep")
-    const subBtn = document.querySelector("#submitRep")
+    const wsConnected = document.querySelector("#connecteWs");
+    const texteA = document.querySelector("#texteRep");
+    const subBtn = document.querySelector("#submitRep");
+    const pcChoisi = document.querySelector("#addressIp");
 
-    ws.onopen = () => {
-      console.log("marche");
-      wsConnected.textContent = `Connecté`;
+    let ws = null;
+    let timeoutId = null;
+
+    function connecterWS(){
+      const ip = pcChoisi.value;
+      ws = new WebSocket(`ws://${ip}:8000/ws`);
+
+      ws.onopen = () => {
+        console.log("marche");
+        wsConnected.textContent = `Connecté`;
+        wsConnected.style.borderColor = "rgba(46, 160, 67, 0.4)";
+        wsConnected.style.color = "#3fb950";
+      }
+
+      ws.onmessage = (event) => {
+        console.log("coucou");
+        const data = JSON.parse(event.data);
+        console.log(data.text);
+        transcript.textContent = data.text;
+      }
+
+      ws.onclose = () => {
+        wsConnected.textContent = "Déconnecté";
+        wsConnected.style.borderColor = "rgba(248, 81, 73, 0.4)";
+        wsConnected.style.color = "#f85149";
+      }
     }
 
     recognition.onstart = () => {
       console.log("L'écoute a VRAIMENT démarré");
+      micBut.classList.add("listening");
     }
-
 
     micBut.onclick = () => {
         try {
           recognition.start();
-          console.log("En attente d'une commande")
+          console.log("En attente d'une commande");
 
           timeoutId = setTimeout (() => {
             console.log("Timeout : arrêt forcé de l'écoute");
             recognition.stop();
-        }, 6000);
+          }, 6000);
         } catch (e){
-          console.log("Erreure : ",e);
+          console.log("Erreure : ", e);
         }
-
     }
+
+    pcChoisi.onchange = () => {
+      if (ws) ws.close();
+      connecterWS();
+    }
+
+    connecterWS();
 
     subBtn.onclick = () => {
-      console.log(texteA.value)
+      console.log(texteA.value);
       if (ws.readyState === WebSocket.OPEN){
           ws.send(JSON.stringify({ user_message: texteA.value }));
-        }
+          texteA.value = "";
+      }
     }
 
-
     recognition.onresult = (event) => {
-      console.log("texte entendu")
-        const texte = event.results[0][0].transcript;
-        if (ws.readyState === WebSocket.OPEN){
-          ws.send(JSON.stringify({ user_message: texte }));
-        }
-        response.textContent = `Resultat : ${texte}`;
+      console.log("texte entendu");
+      const texte = event.results[0][0].transcript;
+      if (ws.readyState === WebSocket.OPEN){
+        ws.send(JSON.stringify({ user_message: texte }));
+      }
+      response.textContent = `Résultat : ${texte}`;
     }
 
     recognition.onerror = (event) => {
       console.log("ERREUR MICRO :", event.error);
+      micBut.classList.remove("listening");
     }
 
     recognition.onend = () => {
       console.log("Écoute terminée");
+      micBut.classList.remove("listening");
       clearTimeout(timeoutId);
     }
-
-    ws.onmessage = (event) => {
-        console.log("coucou");
-        const data = JSON.parse(event.data); // event.data = la string JSON reçue
-        console.log(data.text); // "Message reçu !"
-        transcript.textContent = data.text;
-    }
-
-
 </script>
 
 </body>
