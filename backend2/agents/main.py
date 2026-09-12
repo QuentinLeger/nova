@@ -2,6 +2,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from audio import speak_async
 import json
 from nova import ask_nova
+from actions import execute_action
 
 import requests
 
@@ -28,16 +29,21 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
                 result = ask_nova(commande)
+                print(result)
+                texteNova = result.get("reponse", "")
+
+                execute_action(result)
+
                 if voice_target == "serveur":
-                    await websocket.send_json({"type": "speech", "text": result})
-                    await speak_async(result)
+                    await websocket.send_json({"type": "speech", "text": texteNova})
+                    await speak_async(texteNova)
 
                 else :
-                    await websocket.send_json({"type": "text", "text": result})
+                    await websocket.send_json({"type": "text", "text": texteNova})
 
                     url = f"http://{get_ip.get(voice_target)}/speak"
                     try :
-                        requests.post(url,json={"text":result},timeout=5)
+                        requests.post(url,json={"text":texteNova},timeout=5)
                     except Exception as e:
                         print(f"Agent injoignable : {e}")
 
