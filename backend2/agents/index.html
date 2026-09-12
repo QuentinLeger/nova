@@ -85,6 +85,31 @@
     color: #e6edf3;
   }
 
+
+
+
+
+  #voiceTarget {
+    background: rgba(255, 255, 255, 0.06);
+    color: #c9d1d9;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 6px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+  }
+
+  #voiceTarget:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+
+  #voiceTarget option {
+    background: #161b22;
+    color: #e6edf3;
+  }
+
   /* Bouton micro avec effet de halo */
   #mic-btn {
     width: 96px;
@@ -205,8 +230,16 @@
         <div id="connecteWs">Deco</div>
       </div>
       <select id="addressIp">
+        <option selected disabled>PcServeur</option>
         <option value="192.168.1.18">Pc Fixe</option>
         <option value="localhost">Pc utilisé</option>
+      </select>
+
+      <select id="voiceTarget">
+        <option selected disabled>Où parler</option>
+        <option value="navigateur">Parler ici (ce PC)</option>
+        <option value="serveur">Parler sur le serveur</option>
+        <option value="pc_fixe">Parler sur l'enceinte (PC fixe)</option>
       </select>
     </div>
 
@@ -237,6 +270,7 @@
     const texteA = document.querySelector("#texteRep");
     const subBtn = document.querySelector("#submitRep");
     const pcChoisi = document.querySelector("#addressIp");
+    const voiceTarget = document.querySelector("#voiceTarget")
 
     let ws = null;
     let timeoutId = null;
@@ -253,10 +287,15 @@
       }
 
       ws.onmessage = (event) => {
-        console.log("coucou");
         const data = JSON.parse(event.data);
         console.log(data.text);
         transcript.textContent = data.text;
+
+        if (data.type === "speak_local") {
+          const utterance = new SpeechSynthesisUtterance(data.text);
+          utterance.lang = "fr-FR";
+          speechSynthesis.speak(utterance);
+        }
       }
 
       ws.onclose = () => {
@@ -295,16 +334,18 @@
     subBtn.onclick = () => {
       console.log(texteA.value);
       if (ws.readyState === WebSocket.OPEN){
-          ws.send(JSON.stringify({ user_message: texteA.value }));
+          ws.send(JSON.stringify({ user_message: texteA.value, voice_target: voiceTarget}));
           texteA.value = "";
       }
     }
+
+
 
     recognition.onresult = (event) => {
       console.log("texte entendu");
       const texte = event.results[0][0].transcript;
       if (ws.readyState === WebSocket.OPEN){
-        ws.send(JSON.stringify({ user_message: texte }));
+        ws.send(JSON.stringify({ user_message: texte, voice_target: voiceTarget }));
       }
       response.textContent = `Résultat : ${texte}`;
     }
