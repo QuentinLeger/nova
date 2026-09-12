@@ -237,9 +237,8 @@
 
       <select id="voiceTarget">
         <option selected disabled>Où parler</option>
-        <option value="navigateur">Parler ici (ce PC)</option>
-        <option value="serveur">Parler sur le serveur</option>
-        <option value="pc_fixe">Parler sur l'enceinte (PC fixe)</option>
+        <option value="serveur">Pc où il ya le serveur</option>
+        <option value="pc_fixe">Pc fixe (avec son ip)</option>
       </select>
     </div>
 
@@ -289,13 +288,7 @@
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         console.log(data.text);
-        transcript.textContent = data.text;
-
-        if (data.type === "speak_local") {
-          const utterance = new SpeechSynthesisUtterance(data.text);
-          utterance.lang = "fr-FR";
-          speechSynthesis.speak(utterance);
-        }
+        response.textContent = data.text;
       }
 
       ws.onclose = () => {
@@ -334,7 +327,8 @@
     subBtn.onclick = () => {
       console.log(texteA.value);
       if (ws.readyState === WebSocket.OPEN){
-          ws.send(JSON.stringify({ user_message: texteA.value, voice_target: voiceTarget}));
+          ws.send(JSON.stringify({ user_message: texteA.value, voice_target: voiceTarget.value}));
+          transcript.textContent = `Requête : ${texteA.value}`;
           texteA.value = "";
       }
     }
@@ -345,10 +339,12 @@
       console.log("texte entendu");
       const texte = event.results[0][0].transcript;
       if (ws.readyState === WebSocket.OPEN){
-        ws.send(JSON.stringify({ user_message: texte, voice_target: voiceTarget }));
+          ws.send(JSON.stringify({ user_message: texte, voice_target: voiceTarget.value}));
       }
-      response.textContent = `Résultat : ${texte}`;
+      transcript.textContent = `Requête : ${texte}`;
     }
+
+
 
     recognition.onerror = (event) => {
       console.log("ERREUR MICRO :", event.error);
