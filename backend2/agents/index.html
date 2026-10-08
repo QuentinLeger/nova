@@ -22,7 +22,6 @@
     padding: 24px;
   }
 
-  /* Conteneur principal façon carte glassmorphism */
   .container {
     background: rgba(22, 27, 34, 0.75);
     backdrop-filter: blur(16px);
@@ -38,13 +37,13 @@
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
   }
 
-  /* Barre d'état haute (statuts & IP) */
   .top-bar {
     width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 28px;
+    gap: 8px;
   }
 
   .status-group {
@@ -53,7 +52,7 @@
     align-items: center;
   }
 
-  #status, #connecteWs {
+  #connecteWs {
     font-size: 12px;
     font-weight: 500;
     padding: 4px 10px;
@@ -64,11 +63,11 @@
     transition: all 0.2s ease;
   }
 
-  #addressIp {
+  #addressIp, #voiceTarget {
     background: rgba(255, 255, 255, 0.06);
     color: #c9d1d9;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    padding: 6px 12px;
+    padding: 6px 10px;
     border-radius: 10px;
     font-size: 13px;
     outline: none;
@@ -76,41 +75,15 @@
     transition: border-color 0.2s ease;
   }
 
-  #addressIp:hover {
+  #addressIp:hover, #voiceTarget:hover {
     border-color: rgba(255, 255, 255, 0.25);
   }
 
-  #addressIp option {
+  #addressIp option, #voiceTarget option {
     background: #161b22;
     color: #e6edf3;
   }
 
-
-
-
-
-  #voiceTarget {
-    background: rgba(255, 255, 255, 0.06);
-    color: #c9d1d9;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    padding: 6px 12px;
-    border-radius: 10px;
-    font-size: 13px;
-    outline: none;
-    cursor: pointer;
-    transition: border-color 0.2s ease;
-  }
-
-  #voiceTarget:hover {
-    border-color: rgba(255, 255, 255, 0.25);
-  }
-
-  #voiceTarget option {
-    background: #161b22;
-    color: #e6edf3;
-  }
-
-  /* Bouton micro avec effet de halo */
   #mic-btn {
     width: 96px;
     height: 96px;
@@ -150,7 +123,6 @@
     100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(248, 81, 73, 0); }
   }
 
-  /* Retours textuels */
   #transcript {
     min-height: 24px;
     font-size: 14px;
@@ -171,7 +143,6 @@
     line-height: 1.4;
   }
 
-  /* Zone de saisie manuelle */
   .input-group {
     width: 100%;
     display: flex;
@@ -226,19 +197,16 @@
   <div class="container">
     <div class="top-bar">
       <div class="status-group">
-        <div id="status">Déconnecté</div>
-        <div id="connecteWs">Deco</div>
+        <div id="connecteWs">Connexion...</div>
       </div>
       <select id="addressIp">
-        <option selected disabled>PcServeur</option>
-        <option value="192.168.1.18">Pc Fixe</option>
-        <option value="localhost">Pc utilisé</option>
+        <option value="localhost" selected>Localhost</option>
+        <option value="192.168.1.18">PC Fixe (192.168.1.18)</option>
       </select>
 
       <select id="voiceTarget">
-        <option selected disabled>Où parler</option>
-        <option value="serveur">Pc où il ya le serveur</option>
-        <option value="pc_fixe">Pc fixe (avec son ip)</option>
+        <option value="serveur" selected>Parler sur Serveur</option>
+        <option value="pc_fixe">Parler sur PC Fixe</option>
       </select>
     </div>
 
@@ -248,20 +216,22 @@
     <div id="reponse"></div>
 
     <div class="input-group">
-      <textarea id="texteRep" placeholder="Écrire un message alternatif..."></textarea>
+      <textarea id="texteRep" placeholder="Écrire un message alternatif (Entrée pour envoyer)..."></textarea>
       <button id="submitRep">Envoyer</button>
     </div>
   </div>
 
 <script>
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.lang = "fr-FR";
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
+    let recognition = null;
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.lang = "fr-FR";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+    }
 
-    const status = document.querySelector("#status");
     const micBut = document.querySelector("#mic-btn");
     const transcript = document.querySelector("#transcript");
     const response = document.querySelector("#reponse");
@@ -269,94 +239,119 @@
     const texteA = document.querySelector("#texteRep");
     const subBtn = document.querySelector("#submitRep");
     const pcChoisi = document.querySelector("#addressIp");
-    const voiceTarget = document.querySelector("#voiceTarget")
+    const voiceTarget = document.querySelector("#voiceTarget");
 
     let ws = null;
     let timeoutId = null;
 
-    function connecterWS(){
+    function connecterWS() {
       const ip = pcChoisi.value;
+      if (!ip) return;
+
+      if (ws) {
+        ws.close();
+      }
+
+      wsConnected.textContent = "Connexion...";
+      wsConnected.style.borderColor = "rgba(255, 255, 255, 0.1)";
+      wsConnected.style.color = "#8b949e";
+
       ws = new WebSocket(`ws://${ip}:8000/ws`);
 
       ws.onopen = () => {
-        console.log("marche");
-        wsConnected.textContent = `Connecté`;
+        console.log("WebSocket connecté à", ip);
+        wsConnected.textContent = "Connecté";
         wsConnected.style.borderColor = "rgba(46, 160, 67, 0.4)";
         wsConnected.style.color = "#3fb950";
-      }
+      };
 
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        console.log(data.text);
-        response.textContent = data.text;
-      }
+        console.log("Reçu:", data);
+        response.textContent = data.text || "";
+      };
+
+      ws.onerror = (err) => {
+        console.error("Erreur WebSocket:", err);
+      };
 
       ws.onclose = () => {
+        console.log("WebSocket déconnecté");
         wsConnected.textContent = "Déconnecté";
         wsConnected.style.borderColor = "rgba(248, 81, 73, 0.4)";
         wsConnected.style.color = "#f85149";
+      };
+    }
+
+    function envoyerMessage() {
+      const msg = texteA.value.trim();
+      if (!msg) return;
+
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          user_message: msg,
+          voice_target: voiceTarget.value
+        }));
+        transcript.textContent = `Requête : ${msg}`;
+        texteA.value = "";
+      } else {
+        alert("Le serveur WebSocket n'est pas connecté !");
       }
     }
 
-    recognition.onstart = () => {
-      console.log("L'écoute a VRAIMENT démarré");
-      micBut.classList.add("listening");
-    }
+    subBtn.onclick = envoyerMessage;
 
-    micBut.onclick = () => {
+    texteA.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        envoyerMessage();
+      }
+    });
+
+    pcChoisi.onchange = connecterWS;
+
+    if (recognition) {
+      recognition.onstart = () => {
+        micBut.classList.add("listening");
+      };
+
+      recognition.onresult = (event) => {
+        const texte = event.results[0][0].transcript;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            user_message: texte,
+            voice_target: voiceTarget.value
+          }));
+        }
+        transcript.textContent = `Requête : ${texte}`;
+      };
+
+      recognition.onerror = (event) => {
+        console.error("Erreur Micro :", event.error);
+        micBut.classList.remove("listening");
+      };
+
+      recognition.onend = () => {
+        micBut.classList.remove("listening");
+        clearTimeout(timeoutId);
+      };
+
+      micBut.onclick = () => {
         try {
           recognition.start();
-          console.log("En attente d'une commande");
-
-          timeoutId = setTimeout (() => {
-            console.log("Timeout : arrêt forcé de l'écoute");
+          timeoutId = setTimeout(() => {
             recognition.stop();
           }, 6000);
-        } catch (e){
-          console.log("Erreure : ", e);
+        } catch (e) {
+          console.warn("Reconnaissance déjà active ou erreur:", e);
         }
+      };
+    } else {
+      micBut.onclick = () => alert("Reconnaissance vocale non supportée sur ce navigateur (utilise Chrome ou Edge).");
     }
 
-    pcChoisi.onchange = () => {
-      if (ws) ws.close();
-      connecterWS();
-    }
-
+    // Connexion immédiate
     connecterWS();
-
-    subBtn.onclick = () => {
-      console.log(texteA.value);
-      if (ws.readyState === WebSocket.OPEN){
-          ws.send(JSON.stringify({ user_message: texteA.value, voice_target: voiceTarget.value}));
-          transcript.textContent = `Requête : ${texteA.value}`;
-          texteA.value = "";
-      }
-    }
-
-
-
-    recognition.onresult = (event) => {
-      console.log("texte entendu");
-      const texte = event.results[0][0].transcript;
-      if (ws.readyState === WebSocket.OPEN){
-          ws.send(JSON.stringify({ user_message: texte, voice_target: voiceTarget.value}));
-      }
-      transcript.textContent = `Requête : ${texte}`;
-    }
-
-
-
-    recognition.onerror = (event) => {
-      console.log("ERREUR MICRO :", event.error);
-      micBut.classList.remove("listening");
-    }
-
-    recognition.onend = () => {
-      console.log("Écoute terminée");
-      micBut.classList.remove("listening");
-      clearTimeout(timeoutId);
-    }
 </script>
-
 </body>
 </html>

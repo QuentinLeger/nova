@@ -1,7 +1,5 @@
 from .system import ouvrir_site
 
-
-
 ##    "ouvrir_app": ouvrir_app,"dire_heure": dire_heure,"macro": macro, "controle_domotique": controle_domotique, "gestion_taches": gestion_taches,
 
 
@@ -16,3 +14,4 @@ def execute_action(result : dict):
     if handler is None:
         return None
     return handler(result.get("params",{}), result.get("device","pc_fixe"))
+
