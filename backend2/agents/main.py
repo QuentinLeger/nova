@@ -10,7 +10,7 @@ app =FastAPI()
 
 
 get_ip = {
-    "pc_fixe": "192.168.1.18:5001",
+    "pc_fixe": "100.74.247.88:5001",
 }
 
 @app.websocket("/ws")

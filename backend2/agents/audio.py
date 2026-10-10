@@ -1,33 +1,33 @@
-import speech_recognition as sr
-import edge_tts
-import asyncio
+import os
 import pygame
+from gtts import gTTS
+import speech_recognition as sr
 
 def ecouter():
     r = sr.Recognizer()
 
     with sr.Microphone() as source:
-        r.adjust_for_ambient_noise(source,duration=2);
+        r.adjust_for_ambient_noise(source, duration=2)
         print("Je vous écoute")
-        try :
-            audio = r.listen(source,timeout=2)
+        try:
+            audio = r.listen(source, timeout=2)
         except sr.WaitTimeoutError:
             print("Rien entendu")
             return None
 
     try:
-        text = r.recognize_google(audio,language='fr-FR')
+        text = r.recognize_google(audio, language="fr-FR")
         print(f"Vous : {text}")
         return text
-    except:
+    except Exception:
         print("Je n'ai pas compris votre requête")
         return None
 
 
 async def generer_voix(texte):
-    communicate = edge_tts.Communicate(texte, voice="fr-FR-VivienneMultilingualNeural", rate="+2%", pitch="-5Hz")
-    await communicate.save("output.mp3")
-
+    # Remplacement temporaire avec gTTS (accent fr standard)
+    tts = gTTS(text=texte, lang="fr", slow=False)
+    tts.save("output.mp3")
 
 
 def jouer_audio():
@@ -44,6 +44,3 @@ def jouer_audio():
 async def speak_async(texte):
     await generer_voix(texte)
     jouer_audio()
-
-
-
